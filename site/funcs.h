@@ -47,6 +47,7 @@ string get_arg(string * text , string find , string stop = "\r\n"){
     return "";
 }
 
+
 string get_arg1(string * text , string find , string stop = "\r\n"){
     int ind = text->find(find );
     if(ind<0){return "";}
@@ -60,4 +61,38 @@ string get_arg1(string * text , string find , string stop = "\r\n"){
         return text->substr(ind, ((i2) - (ind)));
     }
     return "";
+}
+
+void err(string error){
+    cout<<"[-]ERROR : "<<error<<endl;
+}
+
+string linux_commad(string commmand , int bf= 1){
+    char bff[bf];
+    string ans;
+
+    FILE * p = popen(commmand.c_str() ,"r");
+    if(!p){return ans;}
+    while(fgets(bff , sizeof(bff) , p) != NULL){
+        ans+=((string)bff);
+    }
+    return ans;
+}
+
+
+
+void init_st_sites(string dir , string main_file , map <string ,string>* w){
+    ifstream a = ifstream((dir + main_file).c_str());
+    ifstream f;
+    string bff;
+    
+    while(a>>bff){
+        f = ifstream((dir + bff).c_str());
+        if(!f.is_open()){err("file " +bff+" !f.is_open()");continue;}
+        cout<<"[+]loading :"<<bff<<endl;
+        string bff1((istreambuf_iterator<char>(f)) , (istreambuf_iterator<char>()));
+        (*w)[bff]=bff1;
+        f.close();
+    }
+    a.close();
 }

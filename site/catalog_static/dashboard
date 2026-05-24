@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Панель управления - CryptoAlerts</title>
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --card-bg: #161b22;
+            --accent-color: #58a6ff;
+            --text-color: #c9d1d9;
+            --text-muted: #8b949e;
+            --border-color: #30363d;
+            --success: #238636;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--card-bg);
+        }
+
+        .logo { font-weight: bold; color: #fff; }
+        .user-info { color: var(--text-muted); font-size: 0.9rem; }
+        .logout-btn { color: #f85149; text-decoration: none; margin-left: 15px; }
+
+        .layout {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .welcome-block {
+            margin-bottom: 2rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .card h3 { margin-top: 0; color: #fff; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;}
+
+        .alert-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #21262d;
+        }
+        .alert-item:last-child { border-bottom: none; }
+
+        .status-badge {
+            background-color: var(--success);
+            color: #fff;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">⚡ Панель управления</div>
+        <div class="user-info">
+            User ID: <span id="uid-val">Загрузка...</span>
+            <a href="#" class="logout-btn" id="logoutBtn">Выйти</a>
+        </div>
+    </header>
+
+    <div class="layout">
+        <div class="welcome-block">
+            <h2>Добро пожаловать в систему мониторинга</h2>
+            <p>Здесь отображаются ваши текущие триггеры, обрабатываемые C++ ядром.</p>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h3>Активные настройки алертов</h3>
+                <div id="alerts-list">
+                    <!-- Сюда JS вставит данные -->
+                    <div style="color: var(--text-muted);">Загрузка конфигурации...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Функция автоматической проверки сессии при загрузке
+        async function loadDashboardData() {
+            // 1. Запрос UID
+            try {
+                const uidResponse = await fetch('/api/get/uid', { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (uidResponse.status === 401 || uidResponse.status === 403) {
+                    // Сессия невалидна — кидаем на авторизацию
+                    window.location.href = '/index.html';
+                    return;
+                }
+
+                const uidData = await uidResponse.json();
+                document.getElementById('uid-val').innerText = uidData.uid || uidData.user_id;
+
+            } catch (err) {
+                document.getElementById('uid-val').innerText = 'ошибка';
+            }
+
+            // 2. Запрос активных алертов
+            try {
+                const alertsResponse = await fetch('/api/get/alerts', { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const alertsList = document.getElementById('alerts-list');
+                
+                if (alertsResponse.ok) {
+                    const alerts = await alertsResponse.json(); // Ожидаем массив объектов типа [{pair: "BTCUSDT", type: "volume_spike"}]
+                    
+                    if (alerts.length === 0) {
+                        alertsList.innerHTML = '<div style="color: var(--text-muted);">У вас пока нет активных алертов. Настройте их через бота.</div>';
+                        return;
+                    }
+
+                    alertsList.innerHTML = ''; // Очищаем лоадер
+                    alerts.forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'alert-item';
+                        div.innerHTML = `
+                            <div>
+                                <strong>${item.pair || 'Пара'}</strong> — ${item.type || 'Тип триггера'}
+                            </div>
+                            <span class="status-badge">active</span>
+                        `;
+                        alertsList.appendChild(div);
+                    });
+                } else {
+                    alertsList.innerHTML = '<div style="color: #f85149;">Не удалось загрузить алерты.</div>';
+                }
+            } catch (err) {
+                document.getElementById('alerts-list').innerHTML = '<div style="color: #f85149;">Ошибка сети при получении алертов.</div>';
+            }
+        }
+
+        // Очистка сессии (добавь обработку на бэке по вкусу, пока просто редирект)
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            // Тут можно дёрнуть POST /logout если надо очистить куку на бэке
+            window.location.href = '/index.html';
+        });
+
+        // Запуск при загрузке страницы
+        window.addEventListener('DOMContentLoaded', loadDashboardData);
+    </script>
+</body>
+</html>

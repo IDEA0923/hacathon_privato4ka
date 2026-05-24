@@ -1,7 +1,22 @@
 version: '3.8'
 
 services:
-  # 1. Твой Бот
+
+  db:
+    image: postgres:latest
+    container_name: postgress
+    restart: always
+    environment:
+      POSTGRES_USER: ${postgress_login}
+      POSTGRES_PASSWORD: ${postgress_password}
+      POSTGRES_DB: ${POSTGRES_DB}
+    # ports:
+    #   - "5432:5432"
+    volumes:
+      - ./pg_data:/var/lib/postgresql:Z
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:Z
+    networks:
+      - app_network
   nginx:
     build: ./nginx
     container_name: nginx
@@ -21,18 +36,28 @@ services:
       - TOKEN=${BOT_TOKEN}
       - TOKEN_AI=${TOKEN_AI}
       - admin_id=${admin_id}
+      - POSTGRES_USER=${postgress_login}
+      - POSTGRES_PASSWORD=${postgress_password}
+      - POSTGRES_DB=${POSTGRES_DB}
+
     networks:
       - app_network
 
-  my_site:
-    build: ./site          # Путь до папки с Dockerfile сайта
+  server:
+    build: ./site          
     container_name: site
     stop_signal: SIGKILL
     restart: always
+    ports:
+      - "${PORT}:443"
+    environment:
+      - POSTGRES_USER=${postgress_login}
+      - POSTGRES_PASSWORD=${postgress_password}
+      - POSTGRES_DB=${POSTGRES_DB}
     networks:
       - app_network
-
-
+    depends_on:
+      - db
   ngrok:
     image: ngrok/ngrok:latest
     restart: always

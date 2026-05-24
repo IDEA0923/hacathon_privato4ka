@@ -9,90 +9,60 @@
 #include <iostream>
 #include <thread>
 #include <map>
-#include "net.hpp"
-#include "funcs.hpp"
+
+#include <cstdlib> //std::getenv("postgress_login");
+
+#include <arpa/inet.h> //inet_ntoa
+
+#include <libpq-fe.h>
+
+#include "net_https.hpp"
+#include "funcs.h"
+#include "database.hpp"
+
+#include "responses.hpp"
+
 using namespace std;
 
-string response_200_text[] = {
-    "HTTP/1.1 200 OK\r\n"
-    "Content-Type: text/plain; charset=utf-8\r\n"
-    "Content-Length: " , "\r\n"
-    "Connection: close\r\n"
-    "\r\n" };
-string response_200_html[] = {
-    "HTTP/1.1 200 OK\r\n"
-    "Content-Type: text/html; charset=utf-8\r\n"
-    "Content-Length: " , "\r\n"
-    "Connection: close\r\n"
-    "\r\n" };
-
-string nf404 = ("HTTP/1.1 404 Not Found\r\n\r\n404 Not Found");
 map<string , string > st_sites;
 
-void err(string error){
-    cout<<"[-]ERROR : "<<error<<endl;
-}
-
-
-void init_st_sites(string dir , string main_file , map <string ,string>* w){
-    ifstream a = ifstream((dir + main_file).c_str());
-    ifstream f;
-    string bff;
-    
-    while(a>>bff){
-        f = ifstream((dir + bff).c_str());
-        if(!f.is_open()){err("file " +bff+" !f.is_open()");continue;}
-        cout<<"[+]loading :"<<bff<<endl;
-        string bff1((istreambuf_iterator<char>(f)) , (istreambuf_iterator<char>()));
-        (*w)[bff]=bff1;
-        f.close();
-    }
-    a.close();
-}
-
-string linux_commad(string commmand , int bf= 1){
-    char bff[bf];
-    string ans;
-
-    FILE * p = popen(commmand.c_str() ,"r");
-    if(!p){return ans;}
-    while(fgets(bff , sizeof(bff) , p) != NULL){
-        ans+=((string)bff);
-    }
-    return ans;
-}
+map<string , string > makets_sites;
 
 
 void main1(net nt){
-    
-    string message = nt.recv_http_3(1024);
+    if(nt.init()){nt.dnet();return;}
+    string message = nt.recv2(1024);
+    cout<<"[+]new client ip :"<<inet_ntoa(nt.cli.sin_addr);
     cout<<"client message :\n"<<message<<"\n------"<<endl;
     string path = get_arg1(&message, " ", " ");
     cout << "DEBUG: Path is -> [" << path << "]" << endl;
 
     string methot = message.substr(0, message.find(" "));
     cout<<"methot : "<<methot<<endl;
-    if(path == "/"){
-        string  bff = st_sites["index.html"];
-            nt.send(response_200_html[0]+to_string(bff.size())+response_200_html[1]+bff);
-            cout<<"SENDED: "<<path<<endl;
-            close(nt.socket);
-            return;
-    }else if(path != ""){
-        if(st_sites.count(path.substr(1))){
-            string  bff = st_sites[path.substr(1)];
-            nt.send(response_200_html[0]+to_string(bff.size())+response_200_html[1]+bff);
-            cout<<"SENDED: "<<path<<endl;
-            close(nt.socket);
+    if(methot == "GET"){
+        if(path == "/"){
+            string rsp = response_200_html[0]+to_string(st_sites["index.html"].size())+response_200_html[1]+st_sites["index.html"];
+            nt.send(rsp);
+            cout<<"SENDED: index.html"<<endl;
+            nt.dnet();
             return;
         }
     }
+    if(methot == "POST"){
+        
+    }
     nt.send(nf404);
     cout<<"SENDED: 404 Not Found"<<endl;
-    close(nt.socket);
+    nt.dnet();
 }
 
 int main(int arg , char * args[]){
+    https_init();
+    const SSL_METHOD *method = TLS_server_method();
+    SSL_CTX *ctx = SSL_CTX_new(method);
+    if (!ctx) { perror("Unable to create SSL context"); exit(EXIT_FAILURE); }
+    configure_context(ctx , "server.crt" , "server.key");
+    cout<<"[+]SSL INIT COMPLITE"<<endl;
     cout<<"[/]starting server on port:"<<args[1]<<" for "<<args[2]<<" sessions"<<endl;
     ///init start
     int sock =  socket(AF_INET , SOCK_STREAM , 0);
@@ -117,12 +87,13 @@ int main(int arg , char * args[]){
     }
     int nw_sock;
     init_st_sites("catalog_static/" , "ctg.txt" , &st_sites);
+    init_st_sites("catalog_static/" , "makets.txt" , &makets_sites);
     cout<<"[+] init complite "<<endl;
     //init end
     socklen_t cli_len = sizeof(sockaddr);
     while((nw_sock = accept(sock  , (sockaddr * )& client  , &cli_len))){
         cout<<"new client"<<endl;
-        net buff = net(nw_sock);
+        net buff =net(nw_sock  , client , ctx);
         thread t(main1 , buff);
         t.detach();
     }

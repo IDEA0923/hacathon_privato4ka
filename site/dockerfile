@@ -1,0 +1,16 @@
+FROM gcc:latest AS builder
+WORKDIR /all
+
+RUN apt-get update && apt-get install -y \
+    libpq-dev \
+    libssl-dev \
+    cmake \
+    && rm -rf /var/lib/apt/lists/*
+RUN openssl req -x509 -newkey rsa:4096 -keyout server.key -out server.crt -sha256 -days 365 -nodes -subj "/C=RU/ST=Primorye/L=Vladivostok/O=project/CN=localhost"
+COPY . .
+RUN g++ main.cpp -o server -I/usr/include/postgresql -lssl -lcrypto -lpthread -lpq
+#RUN g++ main.cpp -o server -lssl -lcrypto -lpthread -lpq
+#g++ main.cpp -o server -lpq -lssl -lcrypto
+RUN chmod +x server
+
+CMD ["./server", "443", "8"]
