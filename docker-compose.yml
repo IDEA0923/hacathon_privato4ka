@@ -39,8 +39,8 @@ services:
       - POSTGRES_USER=${postgress_login}
       - POSTGRES_PASSWORD=${postgress_password}
       - POSTGRES_DB=${POSTGRES_DB}
-    ports:
-      - "8080:80"
+    # ports:
+    #   - "8080:80"
     networks:
       - app_network
 
