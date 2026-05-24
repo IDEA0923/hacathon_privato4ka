@@ -25,42 +25,48 @@ export function initTelegram() {
   return tg;
 }
 
-// Системная BackButton в шапке Telegram
+// Системная BackButton в шапке Telegram.
+// SPA работает на хэш-роутере, поэтому ориентируемся на location.hash,
+// а не на pathname, и обновляем состояние на каждый hashchange.
 export function setupBackButton() {
   if (!tg?.BackButton) return;
-  // На главной кнопку прячем, на остальных страницах — показываем
-  const isHome = location.pathname === '/' || location.pathname.endsWith('/index.html');
-  if (isHome) {
-    tg.BackButton.hide();
-  } else {
-    tg.BackButton.show();
-    tg.BackButton.onClick(() => {
-      if (history.length > 1) history.back();
-      else location.href = '/';
-    });
-  }
-}
 
+  const isHomeHash = () => {
+    const h = location.hash.replace(/^#/, '');
+    return !h || h === '/' || h === '/index.html';
+  };
+
+  // Кнопку привязываем один раз — поведение универсальное.
+  try {
+    tg.BackButton.onClick(() => {
+      if (!isHomeHash() && history.length > 1) {
+        history.back();
+      } else {
+        // На главной просто прячем кнопку.
+        location.hash = '#/';
+      }
+    });
+  } catch (_) {}
+
+  const sync = () => {
+    try {
+      if (isHomeHash()) tg.BackButton.hide();
+      else tg.BackButton.show();
+    } catch (_) {}
+  };
+
+  sync();
+  window.addEventListener('hashchange', sync);
+}
 // Лёгкая тактильная отдача (если есть)
 export function haptic(type = 'light') {
   try { tg?.HapticFeedback?.impactOccurred?.(type); } catch (_) {}
 }
 
-// Помечает активный пункт нижней навигации по текущему пути
-export function highlightActiveTab() {
-  const path = location.pathname.replace(/\/$/, '') || '/';
-  document.querySelectorAll('.tabbar__item').forEach(a => {
-    const href = a.getAttribute('href') || '';
-    const norm = href.replace(/\/$/, '') || '/';
-    const isActive =
-      norm === path ||
-      (norm === '/' && (path === '' || path === '/index.html')) ||
-      (norm !== '/' && path.endsWith(norm));
-    a.classList.toggle('tabbar__item--active', isActive);
-  });
-}
+// Подсветка активной вкладки в нижней навигации теперь полностью
+// делается хэш-роутером (см. router.js → updateActive), поэтому
+// отдельный обработчик тут больше не нужен.
 
 // Автостарт при импорте модуля
 initTelegram();
 setupBackButton();
-document.addEventListener('DOMContentLoaded', highlightActiveTab);

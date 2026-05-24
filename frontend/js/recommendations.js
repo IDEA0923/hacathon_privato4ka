@@ -2,15 +2,34 @@ import { Api } from './api.js';
 import { $, el, clear, formatDate, deadlineLabel, skeletonCard } from './utils.js';
 import { toast } from './notifications.js';
 
-const list = $('#recommendations');
-const subjectFilter = $('#filter-subject');
-const levelFilter = $('#filter-level');
-const resetBtn = $('#filter-reset');
-
+// Состояние страницы держим в переменных модуля, но переинициализируем
+// при каждом вызове init() — он триггерится роутером на входе на маршрут.
+let list;
+let subjectFilter;
+let levelFilter;
+let resetBtn;
 let allItems = [];
 let planIds = new Set();
 
-async function init() {
+export async function init() {
+  list = $('#recommendations');
+  subjectFilter = $('#filter-subject');
+  levelFilter = $('#filter-level');
+  resetBtn = $('#filter-reset');
+  if (!list || !subjectFilter || !levelFilter || !resetBtn) return;
+
+  // Сброс предыдущих значений фильтров и состояния (на случай повторного входа).
+  allItems = [];
+  planIds = new Set();
+
+  subjectFilter.addEventListener('change', render);
+  levelFilter.addEventListener('change', render);
+  resetBtn.addEventListener('click', () => {
+    subjectFilter.value = '';
+    levelFilter.value = '';
+    render();
+  });
+
   showSkeletons(6);
 
   // Параллельно: справочник предметов, рекомендации, текущий план.
@@ -33,8 +52,8 @@ async function init() {
     list.appendChild(el('div', { class: 'empty', text: 'Не удалось загрузить рекомендации. Попробуйте обновить страницу.' }));
   }
 }
-function showSkeletons(n) {
-  clear(list);
+
+function showSkeletons(n) {  clear(list);
   for (let i = 0; i < n; i++) list.appendChild(skeletonCard());
 }
 
@@ -146,13 +165,3 @@ function formatGrades(grades) {
   if (grades.length === 1) return grades[0];
   return `${Math.min(...grades)}–${Math.max(...grades)}`;
 }
-
-subjectFilter.addEventListener('change', render);
-levelFilter.addEventListener('change', render);
-resetBtn.addEventListener('click', () => {
-  subjectFilter.value = '';
-  levelFilter.value = '';
-  render();
-});
-
-init();

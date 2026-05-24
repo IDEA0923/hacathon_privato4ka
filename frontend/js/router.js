@@ -1,5 +1,19 @@
+// Хэш-роутер для SPA: маршруты вида #/profile, #/recommendations, #/calendar.
+// Работает без nginx и без серверного try_files — годится для python http.server,
+// `serve`, локального открытия и т.п.
+//
+// Принципы:
+// 1. HTML каждой страницы — это шаблон-строка ниже (один index.html на весь сайт).
+// 2. Скрипт страницы импортируется один раз через dynamic import() и кэшируется.
+//    Затем при каждом входе на маршрут мы дёргаем у него init() — это позволяет
+//    повторно «оживить» страницу после возврата (модули браузер повторно не
+//    исполняет, поэтому без явного init() ничего бы не произошло).
+// 3. Клик по <a data-link href="#/..."> перехватывается и меняет location.hash.
+
 const routes = {
-  '/': `
+  '/': {
+    title: 'AI-рекрутер олимпиад',
+    html: `
     <section class="container">
       <div class="hero">
         <h1>Найди свою олимпиаду</h1>
@@ -8,7 +22,7 @@ const routes = {
           Заполни профиль — получи персональный план участия на учебный год с дедлайнами
           и AI-обоснованиями выбора.
         </p>
-        <a href="/profile" class="btn btn--primary btn--block-mobile" data-link>Начать →</a>
+        <a href="#/profile" class="btn btn--primary btn--block-mobile" data-link>Начать →</a>
       </div>
 
       <div class="features">
@@ -35,8 +49,11 @@ const routes = {
       </div>
     </section>
   `,
-  '/profile': `
-    <div class="container">
+  },
+  '/profile': {
+    title: 'Профиль — AI-рекрутер олимпиад',
+    module: () => import('./profile.js'),
+    html: `    <div class="container">
       <h1>Профиль школьника</h1>
       <p class="muted" style="margin-bottom: 24px;">
         Заполни анкету — мы подберём олимпиады под твой профиль.
@@ -92,12 +109,15 @@ const routes = {
 
         <div class="form__actions">
           <button type="submit" class="btn btn--primary">Сохранить и продолжить</button>
-          <a href="/recommendations" class="btn btn--secondary" data-link>К рекомендациям →</a>
+          <a href="#/recommendations" class="btn btn--secondary" data-link>К рекомендациям →</a>
         </div>
       </form>
     </div>
   `,
-  '/recommendations': `
+  },
+  '/recommendations': {    title: 'Рекомендации — AI-рекрутер олимпиад',
+    module: () => import('./recommendations.js'),
+    html: `
     <div class="container">
       <h1>Подобрано для вас</h1>
       <p class="muted" style="margin-bottom: 24px;">
@@ -120,7 +140,11 @@ const routes = {
       <div id="recommendations" class="cards"></div>
     </div>
   `,
-  '/calendar': `
+  },
+  '/calendar': {
+    title: 'Календарь — AI-рекрутер олимпиад',
+    module: () => import('./calendar.js'),
+    html: `
     <div class="container">
       <div class="page-head">
         <div>
@@ -132,41 +156,87 @@ const routes = {
 
       <div id="calendar" class="calendar"></div>
     </div>
-  `
+  `,
+  },
 };
 
-const scripts = {
-  '/profile': '/js/profile.js',
-  '/recommendations': '/js/recommendations.js',
-  '/calendar': '/js/calendar.js'
-};
+function currentPath() {
+  // location.hash имеет вид '#/profile' либо пустой. Нормализуем к '/...'.
+  const raw = location.hash.replace(/^#/, '');
+  if (!raw || raw === '/') return '/';
+  return raw;
+}
 
-const navigate = (path) => {
-  const app = document.getElementById('app');
-  app.innerHTML = routes[path] || routes['/'];
-  
-  // Update active state in nav
-  document.querySelectorAll('[data-link]').forEach(el => {
-    el.classList.toggle('active', el.getAttribute('href') === path);
+function updateActive(path) {
+  document.querySelectorAll('[data-link]').forEach((el) => {
+    const href = el.getAttribute('href') || '';
+    const linkPath = href.replace(/^#/, '');
+    const isActive =
+      linkPath === path ||
+      (linkPath === '/' && (path === '' || path === '/'));
+    el.classList.toggle('active', isActive);
+    if (el.classList.contains('tabbar__item')) {
+      el.classList.toggle('tabbar__item--active', isActive);
+    }
   });
+}
 
-  // Load page-specific script if needed
-  if (scripts[path]) {
-    const script = document.createElement('script');
-    script.src = scripts[path];
-    script.type = 'module';
-    app.appendChild(script);
+async function navigate() {
+  const path = currentPath();
+  const route = routes[path] || routes['/'];
+
+  const app = document.getElementById('app');
+  if (!app) return;
+
+  app.innerHTML = route.html;
+  if (route.title) document.title = route.title;
+  updateActive(path);
+  window.scrollTo(0, 0);
+
+  if (route.module) {
+    try {
+      const mod = await route.module();
+      // Модуль страницы исполняется только один раз; для повторных заходов
+      // дёргаем экспортируемую init() — она навешивает обработчики и
+      // запускает запросы (с авто-fallback на mock внутри Api.*).
+      if (typeof mod.init === 'function') {
+        mod.init();
+      }
+    } catch (err) {
+      console.error('[router] failed to load page module:', err);
+    }
   }
-};
+}
 
-document.addEventListener('click', e => {
-  if (e.target.matches('[data-link]')) {
-    e.preventDefault();
-    const path = e.target.getAttribute('href');
-    history.pushState(null, null, path);
-    navigate(path);
+// Перехватываем клики по data-link с hash-ссылками.
+document.addEventListener('click', (e) => {
+  const link = e.target.closest && e.target.closest('[data-link]');
+  if (!link) return;
+  const href = link.getAttribute('href') || '';
+  if (!href.startsWith('#')) return;
+  e.preventDefault();
+  if (location.hash === href) {
+    // Тот же маршрут — всё равно перезапустим init().
+    navigate();
+  } else {
+    location.hash = href;
   }
 });
 
-window.addEventListener('popstate', () => navigate(location.pathname));
-navigate(location.pathname);
+window.addEventListener('hashchange', navigate);
+
+// Программная навигация для других модулей (например, форма профиля).
+export function goTo(path) {
+  const hash = path.startsWith('#')
+    ? path
+    : '#' + (path.startsWith('/') ? path : '/' + path);
+  if (location.hash === hash) navigate();
+  else location.hash = hash;
+}
+
+// Стартовая навигация.
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', navigate);
+} else {
+  navigate();
+}

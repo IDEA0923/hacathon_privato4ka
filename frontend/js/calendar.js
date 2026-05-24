@@ -2,10 +2,21 @@ import { Api } from './api.js';
 import { $, el, clear, groupByMonth, formatDate, deadlineLabel, MONTHS_NOMINATIVE, MONTHS_SHORT } from './utils.js';
 import { toast } from './notifications.js';
 
-const root = $('#calendar');
-const exportBtn = $('#export-ics');
+// Состояние страницы. root/exportBtn ищем на каждом вызове init() — потому что
+// HTML вставляется роутером прямо перед этим, и старые ссылки на DOM
+// предыдущего захода уже не действительны.
+let root;
+let exportBtn;
 
-async function init() {
+export async function init() {
+  root = $('#calendar');
+  exportBtn = $('#export-ics');
+  if (!root || !exportBtn) return;
+
+  // На каждом входе на маршрут /calendar HTML вставляется заново,
+  // поэтому обработчик навешиваем тут, а не на уровне модуля.
+  exportBtn.addEventListener('click', onExport);
+
   clear(root);
   root.appendChild(el('div', { class: 'loading', text: 'Загружаем ваш план...' }));
 
@@ -17,7 +28,6 @@ async function init() {
     root.appendChild(el('div', { class: 'empty', text: 'Не удалось загрузить план: ' + err.message }));
   }
 }
-
 function render(items) {
   clear(root);
 
@@ -25,7 +35,7 @@ function render(items) {
     root.appendChild(el('div', { class: 'empty' }, [
       el('h3', { text: 'План пока пуст' }),
       el('p', { class: 'muted', text: 'Перейдите в раздел «Рекомендации» и добавьте интересующие олимпиады.' }),
-      el('a', { class: 'btn btn--primary', attrs: { href: '/recommendations.html' }, text: 'К рекомендациям →', style: { marginTop: '16px', display: 'inline-block' } }),
+      el('a', { class: 'btn btn--primary', attrs: { href: '#/recommendations', 'data-link': '' }, text: 'К рекомендациям →', style: { marginTop: '16px', display: 'inline-block' } }),
     ]));
     return;
   }
@@ -33,7 +43,6 @@ function render(items) {
   const months = groupByMonth(items, 'deadline');
   months.forEach(m => root.appendChild(monthBlock(m)));
 }
-
 function monthBlock(m) {
   return el('div', { class: 'month' }, [
     el('h2', { class: 'month__title', text: `${MONTHS_NOMINATIVE[m.month]} ${m.year}` }),
@@ -102,7 +111,7 @@ function buildIcs(items) {
   return lines.join('\r\n');
 }
 
-exportBtn.addEventListener('click', async () => {
+async function onExport() {
   try {
     const plan = await Api.getPlan();
     if (!plan || !plan.length) {
@@ -121,6 +130,4 @@ exportBtn.addEventListener('click', async () => {
   } catch (err) {
     toast('Ошибка экспорта', err.message, 'danger');
   }
-});
-
-init();
+}
