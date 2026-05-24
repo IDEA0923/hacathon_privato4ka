@@ -42,7 +42,7 @@ void main1(net nt){
     cout<<"ask ai"<<ask_ai("ку ")<<endl;
     if(methot == "GET"){
         if(path == "/"){
-            string rsp = response_200_html[0]+to_string(st_sites["index1.html"].size())+response_200_html[1]+st_sites["index.html"];
+            string rsp = response_200_html[0]+to_string(st_sites["index.html"].size())+response_200_html[1]+st_sites["index.html"];
             nt.send(rsp);
             cout<<"SENDED: index.html"<<endl;
             nt.dnet();
