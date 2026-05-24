@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#2563eb" />
+  <title>AI-рекрутер олимпиад</title>
+  <style>
+    /* ---------- Reset ---------- */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: #ffffff;
+      color: #111827;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; cursor: pointer; }
+    input, select, textarea { font: inherit; }
+
+    /* ---------- Layout ---------- */
+    .container { max-width: 720px; margin: 0 auto; padding: 16px; }
+    .header {
+      position: sticky; top: 0; z-index: 10;
+      background: #ffffff; border-bottom: 1px solid #e5e7eb;
+    }
+    .header__inner {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px; max-width: 720px; margin: 0 auto; gap: 8px;
+    }
+    .logo { font-weight: 700; font-size: 18px; color: #2563eb; }
+    .nav-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+    .nav-tabs a {
+      padding: 6px 10px; border-radius: 9999px;
+      background: #f3f4f6; font-size: 13px; color: #374151;
+    }
+    .nav-tabs a.active { background: #2563eb; color: #fff; }
+
+    /* ---------- Cards / Common ---------- */
+    .card {
+      background: #f9fafb; border: 1px solid #e5e7eb;
+      border-radius: 16px; padding: 16px; margin-bottom: 12px;
+    }
+    .card--center {
+      max-width: 420px; margin: 48px auto; background: #fff;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+    }
+    h1 { font-size: 22px; margin: 0 0 12px; }
+    h2 { font-size: 18px; margin: 0 0 8px; }
+    p  { margin: 0 0 8px; line-height: 1.45; }
+    .muted { color: #6b7280; font-size: 14px; }
+
+    /* ---------- Buttons ---------- */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 10px 16px; border-radius: 12px; border: 0;
+      background: #2563eb; color: #fff; font-weight: 600;
+      width: 100%;
+    }
+    .btn:hover { background: #1d4ed8; }
+    .btn:disabled { background: #9ca3af; cursor: not-allowed; }
+    .btn--ghost { background: #f3f4f6; color: #111827; }
+    .btn--ghost:hover { background: #e5e7eb; }
+
+    /* ---------- Forms ---------- */
+    .field { display: block; margin-bottom: 12px; }
+    .field label { display: block; font-size: 13px; color: #374151; margin-bottom: 4px; }
+    .input, .select, .textarea {
+      width: 100%; padding: 10px 12px;
+      border: 1px solid #d1d5db; border-radius: 12px; background: #fff;
+      outline: none;
+    }
+    .input:focus, .select:focus, .textarea:focus { border-color: #2563eb; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip {
+      padding: 6px 10px; border-radius: 9999px;
+      background: #f3f4f6; border: 1px solid #e5e7eb; cursor: pointer;
+      font-size: 13px; user-select: none;
+    }
+    .chip.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+
+    /* ---------- States ---------- */
+    .loading { padding: 24px; text-align: center; color: #6b7280; }
+    .error {
+      background: #fef2f2; color: #991b1b;
+      border: 1px solid #fecaca; padding: 10px 12px;
+      border-radius: 12px; margin-bottom: 12px; font-size: 14px;
+    }
+    .spinner {
+      width: 24px; height: 24px; border-radius: 50%;
+      border: 3px solid #e5e7eb; border-top-color: #2563eb;
+      animation: spin 0.8s linear infinite; margin: 0 auto 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ---------- Olympiad item ---------- */
+    .olymp { display: flex; flex-direction: column; gap: 6px; cursor: pointer; }
+    .olymp__title { font-weight: 600; }
+    .olymp__meta  { font-size: 13px; color: #6b7280; }
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 9999px;
+      font-size: 12px; background: #dbeafe; color: #1e40af;
+      margin-right: 4px;
+    }
+
+    /* ---------- Filters bar ---------- */
+    .filters { display: grid; grid-template-columns: 1fr; gap: 8px; margin-bottom: 12px; }
+    @media (min-width: 560px) {
+      .filters { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header" id="header" hidden>
+    <div class="header__inner">
+      <a href="#/dashboard" class="logo">🎓 AI-рекрутер</a>
+      <nav class="nav-tabs" id="nav-tabs">
+        <a href="#/dashboard" data-route="#/dashboard">Главная</a>
+        <a href="#/catalog"   data-route="#/catalog">Каталог</a>
+        <a href="#/calendar"  data-route="#/calendar">Календарь</a>
+        <a href="#" id="logout-link" style="background:#fee2e2;color:#991b1b">Выйти</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container" id="app">
+    <div class="loading"><div class="spinner"></div>Загрузка...</div>
+  </main>
+
+<script>
+/* =========================================================
+ *  AI-рекрутер олимпиад — монолитный SPA (vanilla JS)
+ *  Hash-router, JWT (localStorage: olymp_token), fetch-обёртка
+ * ========================================================= */
+(function () {
+  'use strict';
+
+  // ---------- Конфиг ----------
+  var API_BASE = '/api/v1';         // только относительные пути, nginx проксирует
+  var TOKEN_KEY = 'olymp_token';
+  var SAFE_LS = (function () {      // безопасный localStorage (Telegram WebView)
+    try {
+      if (!window.localStorage) return null;
+      var k = '__ping__'; localStorage.setItem(k, '1'); localStorage.removeItem(k);
+      return window.localStorage;
+    } catch (e) { return null; }
+  })();
+
+  // ---------- Утилиты ----------
+  function el(tag, attrs, children) {
+    var node = document.createElement(tag);
+    if (attrs) for (var k in attrs) {
+      if (k === 'class') node.className = attrs[k];
+      else if (k === 'html') node.innerHTML = attrs[k];
+      else if (k.indexOf('on') === 0) node.addEventListener(k.slice(2), attrs[k]);
+      else if (attrs[k] !== null && attrs[k] !== undefined) node.setAttribute(k, attrs[k]);
+    }
+    if (children) {
+      (Array.isArray(children) ? children : [children]).forEach(function (c) {
+        if (c == null) return;
+        node.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+      });
+    }
+    return node;
+  }
+  function setApp(node) {
+    var app = document.getElementById('app');
+    app.innerHTML = '';
+    app.appendChild(node);
+  }
+  function showLoading(text) {
+    setApp(el('div', { class: 'loading' }, [
+      el('div', { class: 'spinner' }), text || 'Загрузка...'
+    ]));
+  }
+  function showError(message) {
+    return el('div', { class: 'error' }, message || 'Произошла ошибка');
+  }
+  function getToken()   { return SAFE_LS ? SAFE_LS.getItem(TOKEN_KEY) : null; }
+  function setToken(t)  { if (SAFE_LS) SAFE_LS.setItem(TOKEN_KEY, t); }
+  function clearToken() { if (SAFE_LS) SAFE_LS.removeItem(TOKEN_KEY); }
+
+  // ---------- Fetch-обёртка ----------
+  function api(path, options) {
+    options = options || {};
+    var headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
+    var token = getToken();
+    if (token && !options.skipAuth) headers['Authorization'] = 'Bearer ' + token;
+
+    var url = path.indexOf('http') === 0 ? path : API_BASE + path;
+
+    return fetch(url, {
+      method: options.method || 'GET',
+      headers: headers,
+      body: options.body
+        ? (typeof options.body === 'string' ? options.body : JSON.stringify(options.body))
+        : undefined,
+      credentials: 'same-origin'
+    }).then(function (res) {
+      if (res.status === 401 && !options.skipAuth) {
+        clearToken();
+        if (location.hash !== '#/login') location.hash = '#/login';
+        return Promise.reject(new Error('Не авторизован'));
+      }
+      if (res.status === 403 && /\/recommendations/.test(path)) {
+        location.hash = '#/setup';
+        return Promise.reject(new Error('Профиль не заполнен'));
+      }
+      return res.text().then(function (text) {
+        var data = null;
+        if (text) { try { data = JSON.parse(text); } catch (e) {} }
+        if (!res.ok) {
+          var msg = (data && (data.detail || data.message)) || ('HTTP ' + res.status);
+          var err = new Error(msg); err.status = res.status; err.payload = data;
+          throw err;
+        }
+        return data;
+      });
+    }).catch(function (err) {
+      if (err instanceof TypeError) {
+        throw new Error('Ошибка соединения с сервером');
+      }
+      throw err;
+    });
+  }
+
+  // ---------- Auth-хелперы ----------
+  function verifyBotToken(token) {
+    return api('/auth/verify-bot-token', {
+      method: 'POST',
+      body: { token: token },
+      skipAuth: true
+    });
+  }
+  function fetchMe() { return api('/me'); }
+
+  function handleAuthSuccess(payload) {
+    if (!payload || !payload.access_token) {
+      throw new Error('Сервер не вернул access_token');
+    }
+    setToken(payload.access_token);
+    var user = payload.user || {};
+    if (user.is_profile_filled === false) location.hash = '#/setup';
+    else location.hash = '#/dashboard';
+  }
+
+  // =========================================================
+  //  СТРАНИЦЫ
+  // =========================================================
+
+  // ---------- /login ----------
+  function pageLogin() {
+    document.getElementById('header').hidden = true;
+
+    var manualInput = el('input', {
+      class: 'input', type: 'text', placeholder: 'Вставьте токен из бота'
+    });
+    var errorBox = el('div');
+    var btn = el('button', {
+      class: 'btn',
+      onclick: function () {
+        var t = manualInput.value.trim();
+        if (!t) { errorBox.innerHTML = ''; errorBox.appendChild(showError('Введите токен')); return; }
+        btn.disabled = true; btn.textContent = 'Входим...';
+        verifyBotToken(t)
+          .then(handleAuthSuccess)
+          .catch(function (e) {
+            errorBox.innerHTML = '';
+            errorBox.appendChild(showError(e.message));
+            btn.disabled = false; btn.textContent = 'Войти';
+          });
+      }
+    }, 'Войти');
+
+    setApp(el('div', { class: 'card card--center' }, [
+      el('h1', null, '🎓 AI-рекрутер олимпиад'),
+      el('p', { class: 'muted' }, 'Откройте нашего Telegram-бота и нажмите кнопку «Войти» в сообщении. Бот пришлёт ссылку, которая авторизует вас автоматически.'),
+      el('p', { class: 'muted' }, 'Если автоматический вход не сработал — вставьте токен из сообщения бота вручную:'),
+      el('div', { class: 'field' }, [manualInput]),
+      errorBox,
+      btn
+    ]));
+  }
+
+  // ---------- /auth (обработка ?token=) ----------
+  function pageAuth() {
+    document.getElementById('header').hidden = true;
+    showLoading('Авторизация...');
+
+    var token = null;
+    try {
+      var sp = new URLSearchParams(window.location.search);
+      token = sp.get('token');
+      if (!token) {
+        var h = window.location.hash || '';
+        var qIdx = h.indexOf('?');
+        if (qIdx !== -1) {
+          var hp = new URLSearchParams(h.slice(qIdx + 1));
+          token = hp.get('token');
+        }
+      }
+    } catch (e) {}
+
+    if (!token) {
+      setApp(el('div', { class: 'card card--center' }, [
+        el('h2', null, 'Токен не найден'),
+        el('p', { class: 'muted' }, 'Откройте ссылку из Telegram-бота ещё раз или войдите вручную.'),
+        el('a', { href: '#/login' }, el('button', { class: 'btn' }, 'К входу'))
+      ]));
+      return;
+    }
+
+    verifyBotToken(token)
+      .then(function (payload) {
+        // чистим ?token= из URL, чтобы не утёк в историю/реферер
+        try {
+          history.replaceState(null, '', window.location.pathname + '#/dashboard');
+        } catch (e) {}
+        handleAuthSuccess(payload);
+      })
+      .catch(function (e) {
+        setApp(el('div', { class: 'card card--center' }, [
+          el('h2', null, 'Не удалось войти'),
+          showError(e.message),
+          el('a', { href: '#/login' }, el('button', { class: 'btn' }, 'Попробовать снова'))
+        ]));
+      });
+  }
+
+  // ---------- Константы для форм ----------
+  var SUBJECTS = ['Математика','Физика','Информатика','Русский язык','Литература','История','Обществознание','Английский','Биология','Химия','География'];
+  var LEVELS = [
+    { v: 'school',    t: 'Школьный' },
+    { v: 'municipal', t: 'Муниципальный' },
+    { v: 'regional',  t: 'Региональный' },
+    { v: 'federal',   t: 'Всероссийский' }
+  ];
+
+  // ---------- /setup ----------
+  function pageSetup() {
+    document.getElementById('header').hidden = false;
+    showLoading('Загружаем профиль...');
+
+    fetchMe().then(function (user) {
+      user = user || {};
+      var selectedSubjects = Array.isArray(user.subjects) ? user.subjects.slice() : [];
+
+      var gradeInput = el('input', { class: 'input', type: 'number', min: '1', max: '11', value: user.grade || '' });
+      var regionInput = el('input', { class: 'input', type: 'text', value: user.region || '', placeholder: 'Например: Москва' });
+
+      var levelSelect = el('select', { class: 'select' },
+        LEVELS.map(function (l) {
+          var opt = el('option', { value: l.v }, l.t);
+          if (user.level_preference === l.v) opt.selected = true;
+          return opt;
+        })
+      );
+
+      var chipsBox = el('div', { class: 'chips' }, SUBJECTS.map(function (s) {
+        var active = selectedSubjects.indexOf(s) !== -1;
+        var chip = el('span', {
+          class: 'chip' + (active ? ' active' : ''),
+          onclick: function () {
+            var idx = selectedSubjects.indexOf(s);
+            if (idx === -1) { selectedSubjects.push(s); chip.classList.add('active'); }
+            else { selectedSubjects.splice(idx, 1); chip.classList.remove('active'); }
+          }
+        }, s);
+        return chip;
+      }));
+
+      var errorBox = el('div');
+      var submit = el('button', {
+        class: 'btn',
+        onclick: function () {
+          var grade = parseInt(gradeInput.value, 10);
+          if (!grade || grade < 1 || grade > 11) {
+            errorBox.innerHTML = ''; errorBox.appendChild(showError('Укажите класс от 1 до 11')); return;
+          }
+          if (selectedSubjects.length === 0) {
+            errorBox.innerHTML = ''; errorBox.appendChild(showError('Выберите хотя бы один предмет')); return;
+          }
+          submit.disabled = true; submit.textContent = 'Сохраняем...';
+          api('/me', {
+            method: 'PATCH',
+            body: {
+              grade: grade,
+              subjects: selectedSubjects,
+              region: regionInput.value.trim(),
+              level_preference: levelSelect.value
+            }
+          }).then(function () { location.hash = '#/dashboard'; })
+            .catch(function (e) {
+              errorBox.innerHTML = ''; errorBox.appendChild(showError(e.message));
+              submit.disabled = false; submit.textContent = 'Сохранить';
+            });
+        }
+      }, 'Сохранить');
+
+      setApp(el('div', { class: 'card' }, [
+        el('h1', null, 'Настройка профиля'),
+        el('p', { class: 'muted' }, 'Чтобы мы могли подобрать олимпиады, расскажите немного о себе.'),
+        el('div', { class: 'field' }, [el('label', null, 'Класс'), gradeInput]),
+        el('div', { class: 'field' }, [el('label', null, 'Регион'), regionInput]),
+        el('div', { class: 'field' }, [el('label', null, 'Уровень олимпиад'), levelSelect]),
+        el('div', { class: 'field' }, [el('label', null, 'Предметы'), chipsBox]),
+        errorBox,
+        submit
+      ]));
+    }).catch(function (e) {
+      setApp(el('div', null, [showError(e.message)]));
+    });
+  }
+
+  // ---------- /dashboard ----------
+  function pageDashboard() {
+    document.getElementById('header').hidden = false;
+    showLoading('Подбираем олимпиады...');
+
+    Promise.all([fetchMe(), api('/recommendations')])
+      .then(function (res) {
+        var user = res[0] || {};
+        var recs = Array.isArray(res[1]) ? res[1] : (res[1] && res[1].items) || [];
+
+        var greeting = el('div', { class: 'card' }, [
+          el('h1', null, 'Привет, ' + (user.first_name || user.name || 'друг') + '!'),
+          el('p', { class: 'muted' }, 'Мы подобрали для тебя ' + recs.length + ' олимпиад на основе профиля.')
+        ]);
+
+        var list = el('div', null,
+          recs.length === 0
+            ? [el('div', { class: 'card muted' }, 'Пока нет рекомендаций. Попробуйте позже или дополните профиль.')]
+            : recs.map(function (o) { return olympCard(o, true); })
+        );
+
+        setApp(el('div', null, [greeting, list]));
+      })
+      .catch(function (e) {
+        setApp(el('div', null, [showError(e.message)]));
+      });
+  }
+
+  // ---------- /catalog ----------
+  function pageCatalog() {
+    document.getElementById('header').hidden = false;
+
+    var state = { subject: '', grade: '', region: '', level: '', search: '' };
+
+    var searchInput = el('input', { class: 'input', placeholder: '🔍 Поиск', oninput: function (e) { state.search = e.target.value; debouncedLoad(); } });
+    var subjectSel = el('select', { class: 'select', onchange: function (e) { state.subject = e.target.value; load(); } },
+      [el('option', { value: '' }, 'Все предметы')].concat(SUBJECTS.map(function (s) { return el('option', { value: s }, s); }))
+    );
+    var levelSel = el('select', { class: 'select', onchange: function (e) { state.level = e.target.value; load(); } },
+      [el('option', { value: '' }, 'Любой уровень')].concat(LEVELS.map(function (l) { return el('option', { value: l.v }, l.t); }))
+    );
+    var gradeInput = el('input', { class: 'input', type: 'number', min: '1', max: '11', placeholder: 'Класс', oninput: function (e) { state.grade = e.target.value; debouncedLoad(); } });
+
+    var listBox = el('div');
+    var t = null;
+    function debouncedLoad() { clearTimeout(t); t = setTimeout(load, 300); }
+
+    function load() {
+      listBox.innerHTML = '';
+      listBox.appendChild(el('div', { class: 'loading' }, [el('div', { class: 'spinner' }), 'Загрузка...']));
+      var q = [];
+      for (var k in state) if (state[k]) q.push(encodeURIComponent(k) + '=' + encodeURIComponent(state[k]));
+      api('/olympiads' + (q.length ? '?' + q.join('&') : ''))
+        .then(function (data) {
+          var items = Array.isArray(data) ? data : (data && data.items) || [];
+          listBox.innerHTML = '';
+          if (items.length === 0) {
+            listBox.appendChild(el('div', { class: 'card muted' }, 'Ничего не найдено.'));
+            return;
+          }
+          items.forEach(function (o) { listBox.appendChild(olympCard(o, false)); });
+        })
+        .catch(function (e) {
+          listBox.innerHTML = '';
+          listBox.appendChild(showError(e.message));
+        });
+    }
+
+    setApp(el('div', null, [
+      el('h1', null, 'Каталог олимпиад'),
+      el('div', { class: 'field' }, [searchInput]),
+      el('div', { class: 'filters' }, [subjectSel, levelSel, gradeInput]),
+      listBox
+    ]));
+    load();
+  }
+
+  // ---------- /olympiad/:id ----------
+  function pageOlympiad(id) {
+    document.getElementById('header').hidden = false;
+    showLoading('Открываем олимпиаду...');
+
+    api('/olympiads/' + encodeURIComponent(id))
+      .then(function (o) {
+        o = o || {};
+        var meta = [];
+        if (o.subject) meta.push(el('span', { class: 'badge' }, o.subject));
+        if (o.level)   meta.push(el('span', { class: 'badge' }, o.level));
+        if (o.grade_min || o.grade_max) {
+          meta.push(el('span', { class: 'badge' }, (o.grade_min || '?') + '–' + (o.grade_max || '?') + ' кл.'));
+        }
+
+        var explainBox = el('div', { class: 'card muted' }, 'Нажмите «Почему мне?», чтобы получить персональное объяснение.');
+        var explainBtn = el('button', {
+          class: 'btn btn--ghost',
+          onclick: function () {
+            explainBtn.disabled = true; explainBtn.textContent = 'Думаем...';
+            api('/recommendations/' + encodeURIComponent(id) + '/explain', { method: 'POST' })
+              .then(function (r) {
+                var text = (r && (r.explanation || r.text || r.message)) || 'Объяснение временно недоступно';
+                explainBox.className = 'card';
+                explainBox.textContent = text;
+              })
+              .catch(function () {
+                explainBox.className = 'card';
+                explainBox.textContent = 'Объяснение временно недоступно';
+              })
+              .then(function () {
+                explainBtn.disabled = false; explainBtn.textContent = '🤖 Почему мне?';
+              });
+          }
+        }, '🤖 Почему мне?');
+
+        setApp(el('div', null, [
+          el('a', { href: '#/catalog', class: 'muted' }, '← Назад к каталогу'),
+          el('div', { class: 'card' }, [
+            el('h1', null, o.title || o.name || 'Олимпиада'),
+            el('div', { style: 'margin-bottom:8px' }, meta),
+            el('p', null, o.description || 'Описание отсутствует.'),
+            o.deadline ? el('p', { class: 'muted' }, '📅 Дедлайн регистрации: ' + formatDate(o.deadline)) : null,
+            o.url ? el('a', { href: o.url, target: '_blank', rel: 'noopener' },
+              el('button', { class: 'btn' }, 'Перейти на сайт олимпиады')) : null
+          ]),
+          el('div', { class: 'card' }, [
+            el('h2', null, 'Почему мне это подходит?'),
+            explainBtn,
+            el('div', { style: 'height:8px' }),
+            explainBox
+          ])
+        ]));
+      })
+      .catch(function (e) {
+        setApp(el('div', null, [showError(e.message)]));
+      });
+  }
+
+  // ---------- /calendar ----------
+  function pageCalendar() {
+    document.getElementById('header').hidden = false;
+    showLoading('Строим календарь...');
+
+    api('/recommendations')
+      .then(function (data) {
+        var items = (Array.isArray(data) ? data : (data && data.items) || [])
+          .filter(function (o) { return o.deadline; })
+          .sort(function (a, b) { return new Date(a.deadline) - new Date(b.deadline); });
+
+        if (items.length === 0) {
+          setApp(el('div', null, [
+            el('h1', null, 'Календарь'),
+            el('div', { class: 'card muted' }, 'Нет ближайших дедлайнов.')
+          ]));
+          return;
+        }
+
+        setApp(el('div', null, [el('h1', null, 'Календарь')]
+          .concat(items.map(function (o) {
+            return el('div', {
+              class: 'card olymp',
+              onclick: function () { location.hash = '#/olympiad/' + (o.id || o._id); }
+            }, [
+              el('div', { class: 'olymp__title' }, o.title || o.name || 'Олимпиада'),
+              el('div', { class: 'olymp__meta' }, '📅 ' + formatDate(o.deadline))
+            ]);
+          }))
+        ));
+      })
+      .catch(function (e) {
+        setApp(el('div', null, [showError(e.message)]));
+      });
+  }
+
+  // ---------- 404 ----------
+  function pageNotFound() {
+    document.getElementById('header').hidden = false;
+    setApp(el('div', { class: 'card card--center' }, [
+      el('h2', null, 'Страница не найдена'),
+      el('a', { href: '#/dashboard' }, el('button', { class: 'btn' }, 'На главную'))
+    ]));
+  }
+
+  // ---------- Хелперы ----------
+  function olympCard(o, withReason) {
+    o = o || {};
+    var meta = [];
+    if (o.subject) meta.push(el('span', { class: 'badge' }, o.subject));
+    if (o.level)   meta.push(el('span', { class: 'badge' }, o.level));
+    if (o.deadline) meta.push(el('span', { class: 'olymp__meta' }, ' 📅 ' + formatDate(o.deadline)));
+
+    var children = [
+      el('div', { class: 'olymp__title' }, o.title || o.name || 'Олимпиада'),
+      el('div', null, meta)
+    ];
+    if (withReason && o.reason) {
+      children.push(el('div', { class: 'muted', style: 'margin-top:6px' }, '💡 ' + o.reason));
+    }
+    return el('div', {
+      class: 'card olymp',
+      onclick: function () { location.hash = '#/olympiad/' + (o.id || o._id); }
+    }, children);
+  }
+
+  function formatDate(s) {
+    try {
+      var d = new Date(s);
+      if (isNaN(d.getTime())) return s;
+      return d.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' });
+    } catch (e) { return s; }
+  }
+
+  // =========================================================
+  //  Hash-router
+  // =========================================================
+  function parseHash() {
+    var h = window.location.hash || '';
+    var qIdx = h.indexOf('?');
+    var path = qIdx === -1 ? h : h.slice(0, qIdx);
+    return path || '#/';
+  }
+
+  function updateNavActive(path) {
+    var links = document.querySelectorAll('#nav-tabs a[data-route]');
+    links.forEach(function (a) {
+      if (a.getAttribute('data-route') === path) a.classList.add('active');
+      else a.classList.remove('active');
+    });
+  }
+
+  function render() {
+    // ?token= в search → принудительно идём на #/auth
+    if (window.location.search && /[?&]token=/.test(window.location.search) && parseHash() !== '#/auth') {
+      location.hash = '#/auth';
+      return;
+    }
+
+    var path = parseHash();
+    updateNavActive(path);
+
+    var publicRoutes = ['#/login', '#/auth'];
+    if (publicRoutes.indexOf(path) === -1 && !getToken()) {
+      location.hash = '#/login';
+      return;
+    }
+
+    if (path === '#/' || path === '') {
+      location.hash = getToken() ? '#/dashboard' : '#/login';
+      return;
+    }
+    if (path === '#/login')     return pageLogin();
+    if (path === '#/auth')      return pageAuth();
+    if (path === '#/setup')     return pageSetup();
+    if (path === '#/dashboard') return pageDashboard();
+    if (path === '#/catalog')   return pageCatalog();
+    if (path === '#/calendar')  return pageCalendar();
+
+    var m = path.match(/^#\/olympiad\/(.+)$/);
+    if (m) return pageOlympiad(m[1]);
+
+    return pageNotFound();
+  }
+
+  // ---------- Init ----------
+  document.getElementById('logout-link').addEventListener('click', function (e) {
+    e.preventDefault();
+    clearToken();
+    location.hash = '#/login';
+  });
+
+  window.addEventListener('hashchange', render);
+  window.addEventListener('DOMContentLoaded', render);
+  if (document.readyState === 'interactive' || document.readyState === 'complete') {
+    render();
+  }
+})();
+</script>
+</body>
+</html>

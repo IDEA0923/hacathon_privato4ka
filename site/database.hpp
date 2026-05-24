@@ -59,26 +59,52 @@ class db{
     }
 };
 
-
-
-// void delete_all_other_sesssion_uuid(string uid , db* db1){
-//     vector<vector<string>>fdb = db1->req_with_ans("DELETE FROM ssid_u WHERE user_id = $1 ;" , {uid});
+// int id_valid_data(string tg_id ,db* db1 ){
+//     vector<vector<string>>fdb = db1->req_with_ans("SELECT id FROM users WHERE tg_id = $1" , {tg_id});
+//     if(fdb.size() == 0){
+//         return -1;
+//     }
+//     return stoi(fdb[0][0]);
 // }
-// void add_data(int data_type , string data , string uuid, db* db1){
-//     vector<vector<string>>fdb = db1->req_with_ans("INSERT INTO device_data"+to_string(data_type)+" (uuid , dt) VALUES ($1 , $2)" , {uuid , data});
+// vector<string> count_devices(string tg_id ,db *db1){
+//     vector<vector<string>>fdb = db1->req_with_ans("SELECT tg_id , subjects , class , region FROM  users WHERE tg_id = $1" , {tg_id});
+//     return fdb[0];
 // }
-// bool check_cooldown(int data_type , string uuid, db* db1){
-//     return db1->req_with_ans("SELECT uuid FROM device_data"+to_string(data_type)+" WHERE uuid = $1 AND added > NOW() - INTERVAL '30 seconds';" , {uuid}).size() > 0;
-// }
-// string count_devices(int uid ,db *db1){
-//     return (db1->req_with_ans("SELECT COUNT(*) FROM devices WHERE user_id = $1" , {to_string(uid)})[0][0]);
-// }
-int id_valid_data(string tg_id ,db* db1 ){
-    vector<vector<string>>fdb = db1->req_with_ans("SELECT id FROM users WHERE tg_id" , {tg_id});
-    if(fdb.size() == 0){
+// Пофиксил синтаксис SQL (не было = $1)
+int id_valid_data(string tg_id, db* db1){
+    vector<vector<string>> fdb = db1->req_with_ans("SELECT id FROM users WHERE tg_id = $1", {tg_id});
+    if(fdb.empty()){
         return -1;
     }
     return stoi(fdb[0][0]);
+}
+
+vector<string> get_user_info(string tg_id, db *db1){
+    vector<vector<string>> fdb = db1->req_with_ans("SELECT tg_id, subjects, class, region FROM users WHERE tg_id = $1", {tg_id});
+    if(fdb.empty()) return {};
+    return fdb[0];
+}
+
+vector<string> get_suitable_olimps(string tg_id, db* db1) {
+    vector<string> u_data = get_user_info(tg_id, db1);
+    if(u_data.empty()) return {};
+    string subjects = u_data[1];
+    string cls = u_data[2];
+    // string region = u_data[3]; // Если в olimps добавишь регион, раскомментируй и добавь в запрос
+    
+    string q = "SELECT id FROM olimps WHERE class_start <= $1 AND class_end >= $1 AND subjects = $2 AND date_start BETWEEN NOW() AND NOW() + INTERVAL '1 month'";
+    vector<vector<string>> o_data = db1->req_with_ans(q, {cls, subjects});
+    
+    vector<string> res;
+    for(auto& row : o_data) res.push_back(row[0]);
+    return res;
+}
+
+vector<string> get_olimp_info(string id, db *db1){
+    string q = "SELECT id, name_1, date_start, date_end, class_start, class_end, lvl, frm, lnk, subjects, description_1 FROM olimps WHERE id = $1";
+    vector<vector<string>> fdb = db1->req_with_ans(q, {id});
+    if(fdb.empty()) return {};
+    return fdb[0];
 }
 string generate_UUID(){
     srand(time(0));

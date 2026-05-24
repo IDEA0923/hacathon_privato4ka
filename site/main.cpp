@@ -13,7 +13,7 @@
 #include <cstdlib> //std::getenv("postgress_login");
 
 #include <arpa/inet.h> //inet_ntoa
-
+#include "ai_api.hpp"
 #include <libpq-fe.h>
 
 #include "net_https.hpp"
@@ -29,18 +29,20 @@ map<string , string > st_sites;
 
 
 void main1(net nt){
+    
     if(nt.init()){nt.dnet();return;}
     string message = nt.recv2(1024);
     cout<<"[+]new client ip :"<<inet_ntoa(nt.cli.sin_addr);
     cout<<"client message :\n"<<message<<"\n------"<<endl;
     string path = get_arg1(&message, " ", " ");
     cout << "DEBUG: Path is -> [" << path << "]" << endl;
-
+    
     string methot = message.substr(0, message.find(" "));
     cout<<"methot : "<<methot<<endl;
+    cout<<"ask ai"<<ask_ai("ку ")<<endl;
     if(methot == "GET"){
         if(path == "/"){
-            string rsp = response_200_html[0]+to_string(st_sites["index.html"].size())+response_200_html[1]+st_sites["index.html"];
+            string rsp = response_200_html[0]+to_string(st_sites["index1.html"].size())+response_200_html[1]+st_sites["index.html"];
             nt.send(rsp);
             cout<<"SENDED: index.html"<<endl;
             nt.dnet();
@@ -53,10 +55,104 @@ void main1(net nt){
             }
             
         }
-    }
-    if(methot == "POST"){
+    }else if(methot == "POST"){
+        db db1 = db();
+        
+        // 1. Профиль
+        if("/profile/" == path.substr(0, 9)){
+            string tg_id = path.substr(9);
+            if(id_valid_data(tg_id, &db1) != -1){
+                vector<string> u_data = get_user_info(tg_id, &db1);
+                if(!u_data.empty()){
+                    // Собираем CSV через запятую
+                    string rsp_body = u_data[0] + "," + u_data[1] + "," + u_data[2] + "," + u_data[3];
+                    string rsp = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: " + to_string(rsp_body.size()) + "\r\n\r\n" + rsp_body;
+                    nt.send(rsp);
+                    cout << "SENDED: /profile/" << tg_id << endl;
+                    nt.dnet();
+                    return;
+                }
+            }
+        }
+        // 2. Олимпиады за месяц (id шники)
+        else if("/api/olimps/" == path.substr(0, 12)){
+            string tg_id = path.substr(12);
+            if(id_valid_data(tg_id, &db1) != -1){
+                vector<string> ids = get_suitable_olimps(tg_id, &db1);
+                
+                string rsp_body = "{ \"ids\": [";
+                for(size_t i = 0; i < ids.size(); i++){
+                    rsp_body += ids[i];
+                    if(i != ids.size() - 1) rsp_body += ", ";
+                }
+                rsp_body += "] }";
+                
+                string rsp = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " + to_string(rsp_body.size()) + "\r\n\r\n" + rsp_body;
+                nt.send(rsp);
+                cout << "SENDED: /api/olimps/" << tg_id << endl;
+                nt.dnet();
+                return;
+            }
+        }
+        // 3. Конкретная олимпиада + ИИ поинт
+        else if("/api/olimp:" == path.substr(0, 11)){
+            size_t slash_pos = path.find('/', 11);
+            if(slash_pos != string::npos){
+                string olimp_id = path.substr(11, slash_pos - 11);
+                string tg_id = path.substr(slash_pos + 1);
+                
+                if(id_valid_data(tg_id, &db1) != -1){
+                    vector<string> ol_data = get_olimp_info(olimp_id, &db1);
+                    vector<string> u_data = get_user_info(tg_id, &db1);
+                    
+                    if(!ol_data.empty() && !u_data.empty()){
+                        // Запрос к AI
+                        string ai_req = "Коротко в 1 предложение объясни почему олимпиада " + ol_data[1] + " (" + ol_data[9] + ") подходит ученику " + u_data[2] + " класса. Описание: " + ol_data[10];
+                        string point = ask_ai(ai_req);
+                        
+                        // Экранируем кавычки для валидного JSON (базовая очистка)
+                        size_t pos = 0;
+                        while((pos = point.find("\"", pos)) != string::npos) { point.replace(pos, 1, "\\\""); pos += 2; }
+                        while((pos = point.find("\n", pos)) != string::npos) { point.replace(pos, 1, " "); pos += 1; }
 
+                        // Формируем JSON руками
+                        string rsp_body = "{\n";
+                        rsp_body += "\"id\": " + ol_data[0] + ",\n";
+                        rsp_body += "\"name_1\": \"" + ol_data[1] + "\",\n";
+                        rsp_body += "\"date_start\": \"" + ol_data[2] + "\",\n";
+                        rsp_body += "\"date_end\": \"" + ol_data[3] + "\",\n";
+                        rsp_body += "\"class_start\": " + ol_data[4] + ",\n";
+                        rsp_body += "\"class_end\": " + ol_data[5] + ",\n";
+                        rsp_body += "\"lvl\": \"" + ol_data[6] + "\",\n";
+                        rsp_body += "\"frm\": \"" + ol_data[7] + "\",\n";
+                        rsp_body += "\"lnk\": \"" + ol_data[8] + "\",\n";
+                        rsp_body += "\"subjects\": \"" + ol_data[9] + "\",\n";
+                        rsp_body += "\"description_1\": \"" + ol_data[10] + "\",\n";
+                        rsp_body += "\"point\": \"" + point + "\"\n";
+                        rsp_body += "}";
+
+                        string rsp = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " + to_string(rsp_body.size()) + "\r\n\r\n" + rsp_body;
+                        nt.send(rsp);
+                        cout << "SENDED: /api/olimp:" << olimp_id << "/" << tg_id << endl;
+                        nt.dnet();
+                        return;
+                    }
+                }
+            }
+        }
     }
+    // if(methot == "POST"){
+    //     if("/profile/" == path.substr(0 , 9)){
+    //         db db1 = db();
+    //         string tg_id = path.substr(9);
+    //         if(id_valid_data(tg_id , &db1) != -1){
+    //             nt.send(nf404);
+    //             cout<<"SENDED: 404 Not Found"<<endl;
+    //             nt.dnet();
+    //         }
+
+    //     }
+    // }
     nt.send(nf404);
     cout<<"SENDED: 404 Not Found"<<endl;
     nt.dnet();
