@@ -35,7 +35,7 @@ services:
     environment:
       - TOKEN=${BOT_TOKEN}
       - TOKEN_AI=${TOKEN_AI}
-      - admin_id=${admin_id}
+      - TG_ADMIN_ID=${admin_id}
       - POSTGRES_USER=${postgress_login}
       - POSTGRES_PASSWORD=${postgress_password}
       - POSTGRES_DB=${POSTGRES_DB}
@@ -65,8 +65,8 @@ services:
     environment:
       - NGROK_AUTHTOKEN=${NGROK_TOKEN}
     command:
-      - http
-      - nginx:80
+      - "http"
+      - "https://server:443"
     networks:
       - app_network
 networks:
