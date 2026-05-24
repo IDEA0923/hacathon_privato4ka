@@ -9,20 +9,25 @@ const regionSelect = $('#region');
 let selectedSubjects = new Set();
 
 async function init() {
-  // Загружаем справочники
-  const [regions, subjects] = await Promise.all([
-    Api.getRegions(),
-    Api.getSubjects(),
-  ]);
+  try {
+    // Загружаем справочники. Если запрос упадёт — Api.* сам подставит mock,
+    // но на всякий случай ещё раз ловим ошибки здесь.
+    const [regions, subjects] = await Promise.all([
+      Api.getRegions().catch(() => []),
+      Api.getSubjects().catch(() => []),
+    ]);
 
-  renderRegions(regions);
-  renderSubjects(subjects);
+    renderRegions(regions || []);
+    renderSubjects(subjects || []);
 
-  // Подтягиваем сохранённый профиль
-  const profile = await Api.getProfile();
-  if (profile) fillForm(profile);
+    // Подтягиваем сохранённый профиль
+    const profile = await Api.getProfile().catch(() => null);
+    if (profile) fillForm(profile);
+  } catch (err) {
+    console.error('[profile] init failed:', err);
+    toast('Не удалось загрузить форму', err.message || '', 'danger');
+  }
 }
-
 function renderRegions(regions) {
   clear(regionSelect);
   regionSelect.appendChild(el('option', { text: '— выберите —', attrs: { value: '' } }));

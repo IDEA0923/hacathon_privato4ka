@@ -13,19 +13,26 @@ let planIds = new Set();
 async function init() {
   showSkeletons(6);
 
-  // Параллельно: справочник предметов, рекомендации, текущий план
-  const [subjects, recs, plan] = await Promise.all([
-    Api.getSubjects(),
-    Api.getRecommendations(),
-    Api.getPlan(),
-  ]);
+  // Параллельно: справочник предметов, рекомендации, текущий план.
+  // Каждый запрос изолируем, чтобы падение одного не убивало всю страницу —
+  // на этот случай Api.* всё равно вернёт mock-данные, но подстрахуемся.
+  try {
+    const [subjects, recs, plan] = await Promise.all([
+      Api.getSubjects().catch(() => []),
+      Api.getRecommendations().catch(() => []),
+      Api.getPlan().catch(() => []),
+    ]);
 
-  renderSubjectOptions(subjects);
-  allItems = recs || [];
-  planIds = new Set((plan || []).map(p => p.id));
-  render();
+    renderSubjectOptions(subjects || []);
+    allItems = recs || [];
+    planIds = new Set((plan || []).map(p => p.id));
+    render();
+  } catch (err) {
+    console.error('[recommendations] init failed:', err);
+    clear(list);
+    list.appendChild(el('div', { class: 'empty', text: 'Не удалось загрузить рекомендации. Попробуйте обновить страницу.' }));
+  }
 }
-
 function showSkeletons(n) {
   clear(list);
   for (let i = 0; i < n; i++) list.appendChild(skeletonCard());

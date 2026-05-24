@@ -1,5 +1,8 @@
 // Модуль общения с бэкендом
-// Все запросы идут на /api/... — Nginx проксирует на C++ сервер (backend:8080)
+// Все запросы идут на API_BASE/... — поменяй адрес здесь, если бэкенд на другом хосте.
+// Примеры:
+//   const API_BASE = '/api';                       // если фронт и бэк на одном домене (через Nginx)
+//   const API_BASE = 'http://localhost:8080/api';  // если бэк локально на отдельном порту
 
 const API_BASE = '/api';
 
@@ -21,7 +24,9 @@ export const Auth = {
 
 async function request(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`;
+  const method = (options.method || 'GET').toUpperCase();
   const opts = {
+    method,
     headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
     ...options,
   };
@@ -29,20 +34,30 @@ async function request(endpoint, options = {}) {
     opts.body = JSON.stringify(opts.body);
   }
 
+  console.log(`[API] → ${method} ${url}`, opts.body ? JSON.parse(opts.body) : '');
+  const t0 = performance.now();
+
   try {
     const res = await fetch(url, opts);
+    const ms = Math.round(performance.now() - t0);
     if (!res.ok) {
       const text = await res.text().catch(() => '');
+      console.warn(`[API] ✗ ${method} ${url} → ${res.status} (${ms}ms)`, text);
       throw new Error(`API ${res.status}: ${text || res.statusText}`);
     }
-    if (res.status === 204) return null;
-    return await res.json();
+    if (res.status === 204) {
+      console.log(`[API] ← ${method} ${url} → 204 No Content (${ms}ms)`);
+      return null;
+    }
+    const data = await res.json();
+    console.log(`[API] ← ${method} ${url} → ${res.status} (${ms}ms)`, data);
+    return data;
   } catch (err) {
-    console.error(`[API] ${endpoint}`, err);
+    const ms = Math.round(performance.now() - t0);
+    console.error(`[API] ✗ ${method} ${url} (${ms}ms)`, err.message);
     throw err;
   }
 }
-
 export const Api = {
   // Профиль
   saveProfile(profile) {
@@ -83,13 +98,20 @@ export const Api = {
 };
 
 // ===== MOCK-режим =====
-// Проект — frontend-only (мини-приложение Telegram). Бэкенда нет.
-// Принудительно включаем mock при загрузке модуля — все вызовы Api идут в локальные данные.
-try { localStorage.setItem('mock', '1'); } catch (_) {}
+// По умолчанию шлём реальные запросы на бэкенд (см. API_BASE выше).
+// Если сервер не отвечает или возвращает ошибку — конкретный вызов
+// тихо отдаёт mock-данные, чтобы страница не оставалась пустой.
+// При этом следующий вызов снова попробует реальный бэкенд — так что,
+// как только сервер появится, фронт автоматически переключится на него.
+//
+// Принудительно включить mock (всегда отдавать моки, не ходить в сеть):
+//   localStorage.setItem('mock', '1'); location.reload();
+// Выключить принудительный mock:
+//   localStorage.removeItem('mock'); location.reload();
+
 const MOCK_OLYMPIADS = [
   {
-    id: 1, title: 'Всероссийская олимпиада по математике',
-    subjects: ['математика'], level: 1, grades: [9, 10, 11],
+    id: 1, title: 'Всероссийская олимпиада по математике',    subjects: ['математика'], level: 1, grades: [9, 10, 11],
     region: 'all', deadline: '2025-10-15', stage: 'школьный этап',
     score: 0.95, tags: ['РСОШ', 'диплом → льготы при поступлении'],
   },
@@ -157,99 +179,115 @@ export function enableMock() {
 // Автоматический переключатель: если API падает, поднимаем мок и кэшируем
 const original = { ...Api };
 
-Api.getProfile = async () => {
-  if (mockEnabled()) return JSON.parse(localStorage.getItem('profile') || 'null');
-  try { return await original.getProfile(); }
-  catch { enableMock(); return JSON.parse(localStorage.getItem('profile') || 'null'); }
-};
+// Локальные mock-функции для оповещений и плана из mock-олимпиад.
+// План в mock-режиме храним в localStorage, чтобы он переживал перезагрузки.
+function mockGetPlan() {
+  const ids = JSON.parse(localStorage.getItem('plan') || '[]');
+  return MOCK_OLYMPIADS.filter(o => ids.includes(o.id));
+}
+
+function mockGetNotifications() {
+  const plan = mockGetPlan();
+  const now = new Date();
+  return plan
+    .map(o => ({ ...o, daysLeft: Math.ceil((new Date(o.deadline) - now) / 86400000) }))
+    .filter(o => o.daysLeft >= 0 && o.daysLeft <= 14);
+}
+
+function mockExplain(id) {
+  return {
+    explanation:
+      MOCK_REASONS[id] ||
+      'Эта олимпиада подходит под ваш профиль по предметам и классу.',
+  };
+}
+
+// Хелпер: пытаемся вызвать реальный запрос; при ошибке возвращаем mock.
+// Принудительный mock (localStorage.mock === '1') пропускает реальный вызов.
+async function withFallback(realFn, mockFn) {
+  if (mockEnabled()) return mockFn();
+  try {
+    return await realFn();
+  } catch (err) {
+    console.warn('[API] fallback to mock:', err.message);
+    return mockFn();
+  }
+}
+
+Api.getProfile = () =>
+  withFallback(
+    () => original.getProfile(),
+    () => JSON.parse(localStorage.getItem('profile') || 'null'),
+  );
 
 Api.saveProfile = async (profile) => {
-  if (mockEnabled()) {
-    localStorage.setItem('profile', JSON.stringify(profile));
-    return { ok: true };
-  }
-  try {
-    const r = await original.saveProfile(profile);
-    localStorage.setItem('profile', JSON.stringify(profile));
-    return r;
-  } catch {
-    enableMock();
-    localStorage.setItem('profile', JSON.stringify(profile));
-    return { ok: true };
-  }
+  // Профиль всегда дублируем в localStorage, чтобы форма не теряла данные,
+  // даже если бэкенда нет.
+  localStorage.setItem('profile', JSON.stringify(profile));
+  return withFallback(
+    () => original.saveProfile(profile),
+    () => ({ ok: true, mocked: true }),
+  );
 };
 
-Api.getRecommendations = async (filters = {}) => {
-  if (mockEnabled()) return mockRecommend(filters);
-  try { return await original.getRecommendations(filters); }
-  catch { enableMock(); return mockRecommend(filters); }
-};
+Api.getRecommendations = (filters = {}) =>
+  withFallback(
+    () => original.getRecommendations(filters),
+    () => mockRecommend(filters),
+  );
 
-Api.explain = async (id) => {
-  if (mockEnabled()) {
-    await new Promise(r => setTimeout(r, 700));
-    return { explanation: MOCK_REASONS[id] || 'Эта олимпиада подходит под ваш профиль по предметам и классу.' };
-  }
-  try { return await original.explain(id); }
-  catch { enableMock(); return Api.explain(id); }
-};
+Api.explain = (id) =>
+  withFallback(
+    () => original.explain(id),
+    () => mockExplain(id),
+  );
 
-Api.getPlan = async () => {
-  if (mockEnabled()) {
-    const ids = JSON.parse(localStorage.getItem('plan') || '[]');
-    return MOCK_OLYMPIADS.filter(o => ids.includes(o.id));
-  }
-  try { return await original.getPlan(); }
-  catch { enableMock(); return Api.getPlan(); }
-};
+Api.getPlan = () =>
+  withFallback(
+    () => original.getPlan(),
+    () => mockGetPlan(),
+  );
 
-Api.addToPlan = async (id) => {
-  if (mockEnabled()) {
-    const ids = JSON.parse(localStorage.getItem('plan') || '[]');
-    if (!ids.includes(id)) ids.push(id);
-    localStorage.setItem('plan', JSON.stringify(ids));
-    return { ok: true };
-  }
-  try { return await original.addToPlan(id); }
-  catch { enableMock(); return Api.addToPlan(id); }
-};
+Api.addToPlan = (id) =>
+  withFallback(
+    () => original.addToPlan(id),
+    () => {
+      const ids = JSON.parse(localStorage.getItem('plan') || '[]');
+      if (!ids.includes(id)) ids.push(id);
+      localStorage.setItem('plan', JSON.stringify(ids));
+      return { ok: true, mocked: true };
+    },
+  );
 
-Api.removeFromPlan = async (id) => {
-  if (mockEnabled()) {
-    const ids = JSON.parse(localStorage.getItem('plan') || '[]').filter(x => x !== id);
-    localStorage.setItem('plan', JSON.stringify(ids));
-    return { ok: true };
-  }
-  try { return await original.removeFromPlan(id); }
-  catch { enableMock(); return Api.removeFromPlan(id); }
-};
+Api.removeFromPlan = (id) =>
+  withFallback(
+    () => original.removeFromPlan(id),
+    () => {
+      const ids = JSON.parse(localStorage.getItem('plan') || '[]').filter(x => x !== id);
+      localStorage.setItem('plan', JSON.stringify(ids));
+      return { ok: true, mocked: true };
+    },
+  );
 
-Api.getNotifications = async () => {
-  if (mockEnabled()) {
-    const plan = await Api.getPlan();
-    const now = new Date();
-    return plan
-      .map(o => ({ ...o, daysLeft: Math.ceil((new Date(o.deadline) - now) / 86400000) }))
-      .filter(o => o.daysLeft >= 0 && o.daysLeft <= 14);
-  }
-  try { return await original.getNotifications(); }
-  catch { enableMock(); return Api.getNotifications(); }
-};
+Api.getNotifications = () =>
+  withFallback(
+    () => original.getNotifications(),
+    () => mockGetNotifications(),
+  );
 
-Api.getRegions = async () => {
-  if (mockEnabled()) return MOCK_REGIONS;
-  try { return await original.getRegions(); }
-  catch { enableMock(); return MOCK_REGIONS; }
-};
+Api.getRegions = () =>
+  withFallback(
+    () => original.getRegions(),
+    () => MOCK_REGIONS,
+  );
 
-Api.getSubjects = async () => {
-  if (mockEnabled()) return MOCK_SUBJECTS;
-  try { return await original.getSubjects(); }
-  catch { enableMock(); return MOCK_SUBJECTS; }
-};
+Api.getSubjects = () =>
+  withFallback(
+    () => original.getSubjects(),
+    () => MOCK_SUBJECTS,
+  );
 
-function mockRecommend(filters) {
-  const profile = JSON.parse(localStorage.getItem('profile') || '{}');
+function mockRecommend(filters) {  const profile = JSON.parse(localStorage.getItem('profile') || '{}');
   let list = [...MOCK_OLYMPIADS];
 
   // Фильтр по предмету
