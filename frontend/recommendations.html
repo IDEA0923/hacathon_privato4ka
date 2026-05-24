@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Рекомендации — AI-рекрутер олимпиад</title>
+  <link rel="stylesheet" href="/css/reset.css" />
+  <link rel="stylesheet" href="/css/variables.css" />
+  <link rel="stylesheet" href="/css/main.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="container header__inner">
+      <a href="/" class="logo">🎓 AI-рекрутер</a>
+      <nav class="nav">
+        <a href="/profile.html">Профиль</a>
+        <a href="/recommendations.html" class="active">Рекомендации</a>
+        <a href="/calendar.html">Календарь</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="container">
+      <h1>Подобрано для вас</h1>
+      <p class="muted" style="margin-bottom: 24px;">
+        Олимпиады отсортированы по релевантности вашему профилю.
+      </p>
+
+      <div class="filters">
+        <select id="filter-subject" class="form__select" style="max-width: 220px;">
+          <option value="">Все предметы</option>
+        </select>
+        <select id="filter-level" class="form__select" style="max-width: 180px;">
+          <option value="">Все уровни</option>
+          <option value="1">I уровень</option>
+          <option value="2">II уровень</option>
+          <option value="3">III уровень</option>
+        </select>
+        <button id="filter-reset" class="btn btn--ghost btn--sm">Сбросить</button>
+      </div>
+
+      <div id="recommendations" class="cards"></div>
+    </div>
+  </main>
+
+  <script type="module" src="/js/recommendations.js"></script>
+</body>
+</html>

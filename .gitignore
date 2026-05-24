@@ -1,0 +1,23 @@
+# Build artifacts
+backend/build/
+backend/*.o
+backend/server
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Env
+.env
+.env.local
+
+# Docker
+*.pid

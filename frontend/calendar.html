@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Календарь — AI-рекрутер олимпиад</title>
+  <link rel="stylesheet" href="/css/reset.css" />
+  <link rel="stylesheet" href="/css/variables.css" />
+  <link rel="stylesheet" href="/css/main.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="container header__inner">
+      <a href="/" class="logo">🎓 AI-рекрутер</a>
+      <nav class="nav">
+        <a href="/profile.html">Профиль</a>
+        <a href="/recommendations.html">Рекомендации</a>
+        <a href="/calendar.html" class="active">Календарь</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="container">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 24px;">
+        <div>
+          <h1 style="margin-bottom: 4px;">Календарь дедлайнов</h1>
+          <p class="muted">Все ключевые даты по олимпиадам в вашем плане.</p>
+        </div>
+        <button id="export-ics" class="btn btn--secondary">📥 Экспорт в .ics</button>
+      </div>
+
+      <div id="calendar" class="calendar"></div>
+    </div>
+  </main>
+
+  <script type="module" src="/js/calendar.js"></script>
+</body>
+</html>

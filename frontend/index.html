@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI-рекрутер олимпиад</title>
+  <link rel="stylesheet" href="/css/reset.css" />
+  <link rel="stylesheet" href="/css/variables.css" />
+  <link rel="stylesheet" href="/css/main.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="container header__inner">
+      <a href="/" class="logo">🎓 AI-рекрутер</a>
+      <nav class="nav">
+        <a href="/profile.html">Профиль</a>
+        <a href="/recommendations.html">Рекомендации</a>
+        <a href="/calendar.html">Календарь</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main">
+    <section class="container">
+      <div class="hero">
+        <h1>Найди свою олимпиаду</h1>
+        <p>
+          Агрегатор всех российских олимпиад, конкурсов и научных конференций для школьников.
+          Заполни профиль — получи персональный план участия на учебный год с дедлайнами
+          и AI-обоснованиями выбора.
+        </p>
+        <a href="/profile.html" class="btn btn--primary">Начать →</a>
+      </div>
+
+      <div class="features">
+        <div class="feature">
+          <div class="feature__icon">📚</div>
+          <h3>Все источники</h3>
+          <p class="muted">РСОШ, перечень Минпросвещения, региональные реестры — собираем в одном месте.</p>
+        </div>
+        <div class="feature">
+          <div class="feature__icon">🎯</div>
+          <h3>Персональные рекомендации</h3>
+          <p class="muted">Подбор по предметам, классу, региону и уровню подготовки.</p>
+        </div>
+        <div class="feature">
+          <div class="feature__icon">🤖</div>
+          <h3>AI-обоснования</h3>
+          <p class="muted">LLM объясняет: почему именно эта олимпиада подходит именно тебе.</p>
+        </div>
+        <div class="feature">
+          <div class="feature__icon">📅</div>
+          <h3>Календарь дедлайнов</h3>
+          <p class="muted">Все ключевые даты в одном месте + умные оповещения.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { Auth } from '/js/api.js';
+    import { checkUpcoming } from '/js/notifications.js';
+    // Инициализация user_id и проверка дедлайнов при заходе
+    Auth.getUserId();
+    checkUpcoming();
+  </script>
+</body>
+</html>
