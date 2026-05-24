@@ -26,7 +26,6 @@ using namespace std;
 
 map<string , string > st_sites;
 
-map<string , string > makets_sites;
 
 
 void main1(net nt){
@@ -49,7 +48,7 @@ void main1(net nt){
         }
     }
     if(methot == "POST"){
-        
+
     }
     nt.send(nf404);
     cout<<"SENDED: 404 Not Found"<<endl;
@@ -87,7 +86,7 @@ int main(int arg , char * args[]){
     }
     int nw_sock;
     init_st_sites("catalog_static/" , "ctg.txt" , &st_sites);
-    init_st_sites("catalog_static/" , "makets.txt" , &makets_sites);
+    //init_st_sites("catalog_static/" , "makets.txt" , &makets_sites);
     cout<<"[+] init complite "<<endl;
     //init end
     socklen_t cli_len = sizeof(sockaddr);
