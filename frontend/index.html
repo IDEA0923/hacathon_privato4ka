@@ -13,65 +13,31 @@
 <body>
   <header class="header">
     <div class="container header__inner">
-      <a href="/" class="logo">🎓 AI-рекрутер</a>
+      <a href="/" class="logo" data-link>🎓 AI-рекрутер</a>
       <nav class="nav nav--desktop">
-        <a href="/profile.html">Профиль</a>
-        <a href="/recommendations.html">Рекомендации</a>
-        <a href="/calendar.html">Календарь</a>
+        <a href="/profile" data-link>Профиль</a>
+        <a href="/recommendations" data-link>Рекомендации</a>
+        <a href="/calendar" data-link>Календарь</a>
       </nav>
     </div>
   </header>
-  <main class="main">
-    <section class="container">
-      <div class="hero">
-        <h1>Найди свою олимпиаду</h1>
-        <p>
-          Агрегатор всех российских олимпиад, конкурсов и научных конференций для школьников.
-          Заполни профиль — получи персональный план участия на учебный год с дедлайнами
-          и AI-обоснованиями выбора.
-        </p>
-        <a href="/profile.html" class="btn btn--primary btn--block-mobile">Начать →</a>
-      </div>
 
-      <div class="features">
-        <div class="feature">
-          <div class="feature__icon">📚</div>
-          <h3>Все источники</h3>
-          <p class="muted">РСОШ, перечень Минпросвещения, региональные реестры — собираем в одном месте.</p>
-        </div>
-        <div class="feature">
-          <div class="feature__icon">🎯</div>
-          <h3>Персональные рекомендации</h3>
-          <p class="muted">Подбор по предметам, классу, региону и уровню подготовки.</p>
-        </div>
-        <div class="feature">
-          <div class="feature__icon">🤖</div>
-          <h3>AI-обоснования</h3>
-          <p class="muted">LLM объясняет: почему именно эта олимпиада подходит именно тебе.</p>
-        </div>
-        <div class="feature">
-          <div class="feature__icon">📅</div>
-          <h3>Календарь дедлайнов</h3>
-          <p class="muted">Все ключевые даты в одном месте + умные оповещения.</p>
-        </div>
-      </div>
-    </section>
-  </main>
+  <main class="main" id="app"></main>
 
   <nav class="tabbar">
-    <a href="/" class="tabbar__item">
+    <a href="/" class="tabbar__item" data-link>
       <span class="tabbar__icon">🏠</span>
       <span class="tabbar__label">Главная</span>
     </a>
-    <a href="/profile.html" class="tabbar__item">
+    <a href="/profile" class="tabbar__item" data-link>
       <span class="tabbar__icon">👤</span>
       <span class="tabbar__label">Профиль</span>
     </a>
-    <a href="/recommendations.html" class="tabbar__item">
+    <a href="/recommendations" class="tabbar__item" data-link>
       <span class="tabbar__icon">🎯</span>
       <span class="tabbar__label">Подбор</span>
     </a>
-    <a href="/calendar.html" class="tabbar__item">
+    <a href="/calendar" class="tabbar__item" data-link>
       <span class="tabbar__icon">📅</span>
       <span class="tabbar__label">План</span>
     </a>
@@ -81,6 +47,7 @@
     import '/js/telegram.js';
     import { Auth } from '/js/api.js';
     import { checkUpcoming } from '/js/notifications.js';
+    import '/js/router.js';
     Auth.getUserId();
     checkUpcoming();
   </script>
