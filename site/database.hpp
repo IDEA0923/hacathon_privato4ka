@@ -73,8 +73,8 @@ class db{
 // string count_devices(int uid ,db *db1){
 //     return (db1->req_with_ans("SELECT COUNT(*) FROM devices WHERE user_id = $1" , {to_string(uid)})[0][0]);
 // }
-int id_valid_data(string uid , string password ,db* db1 ){
-    vector<vector<string>>fdb = db1->req_with_ans("SELECT id FROM users WHERE username = $1 AND passwrd = $2" , {uid , password});
+int id_valid_data(string tg_id ,db* db1 ){
+    vector<vector<string>>fdb = db1->req_with_ans("SELECT id FROM users WHERE tg_id" , {tg_id});
     if(fdb.size() == 0){
         return -1;
     }

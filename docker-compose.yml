@@ -17,15 +17,6 @@ services:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:Z
     networks:
       - app_network
-  # nginx:
-  #   build: ./nginx
-  #   container_name: nginx
-  #   restart: always
-  #   ports:
-  #     - "8080:80"
-  #   networks:
-  #     - app_network
-
   my_bot:
     build: ./bot           # Путь до папки с Dockerfile бота
     container_name: bot

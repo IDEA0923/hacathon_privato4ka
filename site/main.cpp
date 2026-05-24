@@ -45,6 +45,13 @@ void main1(net nt){
             cout<<"SENDED: index.html"<<endl;
             nt.dnet();
             return;
+        }else if("/api/" == path.substr(0, 5)){
+            if("profile" == path.substr(5, 7) ){
+                if(1)
+                nt.dnet();
+                return;
+            }
+            
         }
     }
     if(methot == "POST"){
