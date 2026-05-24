@@ -2,24 +2,25 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#5b5bf6" />
   <title>Профиль — AI-рекрутер олимпиад</title>
   <link rel="stylesheet" href="/css/reset.css" />
   <link rel="stylesheet" href="/css/variables.css" />
   <link rel="stylesheet" href="/css/main.css" />
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
   <header class="header">
     <div class="container header__inner">
       <a href="/" class="logo">🎓 AI-рекрутер</a>
-      <nav class="nav">
+      <nav class="nav nav--desktop">
         <a href="/profile.html" class="active">Профиль</a>
         <a href="/recommendations.html">Рекомендации</a>
         <a href="/calendar.html">Календарь</a>
       </nav>
     </div>
   </header>
-
   <main class="main">
     <div class="container">
       <h1>Профиль школьника</h1>
@@ -75,7 +76,7 @@
           <textarea id="past" name="past" class="form__textarea" rows="3"
             placeholder="Например: призёр ВсОШ по математике, 9 класс"></textarea>        </div>
 
-        <div style="display: flex; gap: 12px;">
+        <div class="form__actions">
           <button type="submit" class="btn btn--primary">Сохранить и продолжить</button>
           <a href="/recommendations.html" class="btn btn--secondary">К рекомендациям →</a>
         </div>
@@ -83,6 +84,25 @@
     </div>
   </main>
 
+  <nav class="tabbar">
+    <a href="/" class="tabbar__item">
+      <span class="tabbar__icon">🏠</span>
+      <span class="tabbar__label">Главная</span>
+    </a>
+    <a href="/profile.html" class="tabbar__item">
+      <span class="tabbar__icon">👤</span>
+      <span class="tabbar__label">Профиль</span>
+    </a>
+    <a href="/recommendations.html" class="tabbar__item">
+      <span class="tabbar__icon">🎯</span>
+      <span class="tabbar__label">Подбор</span>
+    </a>
+    <a href="/calendar.html" class="tabbar__item">
+      <span class="tabbar__icon">📅</span>
+      <span class="tabbar__label">План</span>
+    </a>
+  </nav>
+
+  <script type="module" src="/js/telegram.js"></script>
   <script type="module" src="/js/profile.js"></script>
-</body>
-</html>
+</body></html>
