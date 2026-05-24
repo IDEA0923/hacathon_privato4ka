@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS users (
                                 tg_id BIGINT ,
                                 subjects VARCHAR(20),
                                 class INT, 
-                                region VARCHAR(3)
+                                region INT
                                 );
 
 CREATE TABLE IF NOT EXISTS  events(
