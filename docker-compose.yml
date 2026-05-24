@@ -29,7 +29,7 @@ services:
   my_bot:
     build: ./bot           # Путь до папки с Dockerfile бота
     container_name: bot
-    restart: always
+    #restart: always
     volumes:
       - ./bot:/app:Z
     environment:
