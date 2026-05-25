@@ -15,7 +15,8 @@ CREATE TABLE IF NOT EXISTS  events(
                                 class_end INT DEFAULT 11, 
                                 lvl VARCHAR(20),
                                 frm VARCHAR(20),
-                                lnk VARCHAR(40)
+                                lnk VARCHAR(40),
                                 subjects VARCHAR(20),
-                                description_1 VARCHAR(500)
+                                description_1 VARCHAR(500),
+                                region INT
                                 )

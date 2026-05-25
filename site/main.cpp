@@ -78,7 +78,7 @@ void main1(net nt){
         else if("/api/olimps/" == path.substr(0, 12)){
             string tg_id = path.substr(12);
             if(id_valid_data(tg_id, &db1) != -1){
-                vector<string> ids = get_suitable_olimps(tg_id, &db1);
+                vector<string> ids = get_suitable_olimps1(tg_id, &db1);
                 
                 string rsp_body = "{ \"ids\": [";
                 for(size_t i = 0; i < ids.size(); i++){

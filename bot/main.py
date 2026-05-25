@@ -92,7 +92,7 @@ async def region_entered(message: Message, state: FSMContext) -> None:
         
     user_data = await state.get_data()
     tg_id = message.from_user.id
-    subject = user_data['subjects']
+    subject = user_data['subjects'][0]
     user_class = user_data['user_class']
     region = int(text)
     

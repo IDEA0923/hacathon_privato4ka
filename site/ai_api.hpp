@@ -34,7 +34,7 @@ string extract_content_from_json1(const string& raw_response) {
     return content;
 }
 
-string ask_ai(const string& user_message) {
+string ask_ai1(const string& user_message) {
     string hostname = "openrouter.ai";
     
     // 2. Инициализируем сетевое TLS-подключение
@@ -89,4 +89,8 @@ string ask_ai(const string& user_message) {
 
     // 9. Извлекаем текст ответа нейросети
     return extract_content_from_json1(json_body);
+}
+
+string ask_ai(string a){
+    return "right now ai not work";
 }

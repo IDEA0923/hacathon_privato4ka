@@ -99,6 +99,35 @@ vector<string> get_suitable_olimps(string tg_id, db* db1) {
     for(auto& row : o_data) res.push_back(row[0]);
     return res;
 }
+vector<string> get_suitable_olimps1(string tg_id, db* db1) {
+    // 1. Получаем инфо о юзере (tg_id, subjects, class, region)
+    vector<string> u_data = get_user_info(tg_id, db1);
+    if(u_data.empty()) return {};
+    
+    string subjects = u_data[1]; // Например "МФ" (Математика, Физика)
+    string cls = u_data[2];      // Класс, например "9"
+    string region = u_data[3];   // Регион, например "77"
+    
+    // 2. Пишем правильный SQL-запрос к таблице events
+    // - Проверяем класс: class_start <= класс_юзера <= class_end
+    // - Проверяем регион: region олимпиады равен региону юзера
+    // - Проверяем дату: начнется в будущем (date_start >= NOW())
+    // - Проверяем предметы: предмет олимпиады есть в строке предметов юзера
+    string q = "SELECT id FROM events WHERE "
+               "class_start <= $1 AND class_end >= $1 "
+               "AND region = $2 "
+               "AND date_start >= NOW() "
+               "AND POSITION(subjects IN $3) > 0 "
+               "ORDER BY date_start ASC"; // Сначала те, что "скоро"
+               
+    vector<vector<string>> o_data = db1->req_with_ans(q, {cls, region, subjects});
+    
+    vector<string> res;
+    for(auto& row : o_data) {
+        res.push_back(row[0]);
+    }
+    return res;
+}
 
 vector<string> get_olimp_info(string id, db *db1){
     string q = "SELECT id, name_1, date_start, date_end, class_start, class_end, lvl, frm, lnk, subjects, description_1 FROM olimps WHERE id = $1";
