@@ -17,6 +17,15 @@ services:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:Z
     networks:
       - app_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-olymp} -d ${POSTGRES_DB:-olymp}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # command: 
+    #   - "postgres"
+    #   - "-c"
+    #   - "client_encoding=UTF8"
   my_bot:
     build: ./bot           # Путь до папки с Dockerfile бота
     container_name: bot
