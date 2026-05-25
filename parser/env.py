@@ -4,10 +4,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Маппим старые названия из .env на те, что используются в коде БД
-POSTGRES_USER = os.getenv("postgress_login", "admin")
-POSTGRES_PASSWORD = os.getenv("postgress_password", "X1imSH2iFhiqgxGBtx8M")
-POSTGRES_DB = os.getenv("POSTGRES_DB", "datab")
-POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
+POSTGRES_USER = os.getenv("POSTGRES_USER")
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+POSTGRES_DB = os.getenv("POSTGRES_DB")
+POSTGRES_HOST = os.getenv("POSTGRES_HOST")
 POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", "5432"))
 
 # Общие настройки парсинга
