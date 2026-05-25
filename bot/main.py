@@ -85,28 +85,35 @@ async def class_entered(message: Message, state: FSMContext) -> None:
 async def region_entered(message: Message, state: FSMContext) -> None:
     text = message.text
     
-    # Валидация региона (только цифры)
+    # Валидация региона (только цифры, так как в init.sql тип INT)
     if not text.isdigit():
-        await message.answer("Номер региона должен состоять только из цифр! Попробуй еще раз:")
+        await message.answer("Номер региона должен состоять только из цифр! Введи, например, 25 для Приморского края:")
         return
         
     user_data = await state.get_data()
     tg_id = message.from_user.id
-    subject = user_data['subjects'][0]
+    
+    # ИСПРАВЛЕНО: сохраняем всю строку "Mat", "Inf" целиком, а не первую букву [0]
+    subject = user_data['subjects']  
     user_class = user_data['user_class']
     region = int(text)
     
-    # Сохранение данных в PostgreSQL через твой метод awrite
-    await pg.awrite(
-        "INSERT INTO users (tg_id, subjects, class, region) VALUES ($1, $2, $3, $4)",
-        tg_id, subject, user_class, region
-    )
-    
-    # Завершаем FSM и очищаем сохраненные шаги
-    await state.clear()
-    
-    await message.answer("🎉 Регистрация успешно завершена! Твои данные сохранены.")
-
+    try:
+        # Сохранение данных в PostgreSQL через метод awrite
+        await pg.awrite(
+            "INSERT INTO users (tg_id, subjects, class, region) VALUES ($1, $2, $3, $4)",
+            tg_id, subject, user_class, region
+        )
+        
+        # Завершаем FSM и очищаем сохраненные шаги
+        await state.clear()
+        
+        await message.answer("🎉 Регистрация успешно завершена! Твои данные сохранены.")
+        
+    except Exception as e:
+        logging.error(f"Ошибка при записи пользователя в БД: {e}")
+        await message.answer("Произошла ошибка при сохранении данных. Попробуй позже.")
+        
 async def main() -> None:
     # Важно: подключаемся к БД перед запуском бота
     await pg.connect()

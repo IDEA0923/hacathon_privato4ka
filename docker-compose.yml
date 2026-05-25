@@ -22,10 +22,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-    # command: 
-    #   - "postgres"
-    #   - "-c"
-    #   - "client_encoding=UTF8"
+    # command: ["postgres", "-c", "client_encoding=UTF8", "-c", "lc_ctype=ru_RU.UTF-8"]
   my_bot:
     build: ./bot           # Путь до папки с Dockerfile бота
     container_name: bot
@@ -63,8 +60,6 @@ services:
   parser:
     build: ./parser
     container_name: parser
-    # По умолчанию запускается один раз и завершается.
-    # Команда: docker compose run --rm parser
     profiles: ["tools"]
     environment:
       - POSTGRES_USER=${postgress_login}
@@ -74,10 +69,13 @@ services:
       - POSTGRES_PORT=5432
     volumes:
       - ./parser:/app:Z
+      # Пробрасываем CSV-файл из корня проекта внутрь контейнера парсера
+      - ./olympiads_2026_2027.csv:/app/olympiads_2026_2027.csv:Z
     networks:
       - app_network
     depends_on:
-      - db
+      db:
+        condition: service_healthy
   ngrok:
     image: ngrok/ngrok:latest
     restart: always

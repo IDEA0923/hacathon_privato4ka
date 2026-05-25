@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS users (
                                 id SERIAL PRIMARY KEY, 
                                 tg_id BIGINT ,
-                                subjects VARCHAR(20),
+                                subjects VARCHAR(255),
                                 class INT, 
                                 region INT
                                 );
@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS  events(
                                 lvl VARCHAR(100),
                                 frm VARCHAR(100),
                                 lnk VARCHAR(100),
-                                subjects VARCHAR(20),
+                                subjects VARCHAR(255),
                                 description_1 VARCHAR(500),
                                 region INT
                                 )

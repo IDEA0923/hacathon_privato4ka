@@ -39,7 +39,7 @@ void main1(net nt){
     
     string methot = message.substr(0, message.find(" "));
     cout<<"methot : "<<methot<<endl;
-    cout<<"ask ai"<<ask_ai("ку ")<<endl;
+    //cout<<"ask ai"<<ask_ai("ку ")<<endl;
     if(methot == "GET"){
         if(path == "/"){
             string rsp = response_200_html[0]+to_string(st_sites["index.html"].size())+response_200_html[1]+st_sites["index.html"];
@@ -59,12 +59,11 @@ void main1(net nt){
         db db1 = db();
         
         // 1. Профиль
-        if("/profile/" == path.substr(0, 9)){
+        if(path.size() >= 9 && "/profile/" == path.substr(0, 9)){
             string tg_id = path.substr(9);
             if(id_valid_data(tg_id, &db1) != -1){
                 vector<string> u_data = get_user_info(tg_id, &db1);
                 if(!u_data.empty()){
-                    // Собираем CSV через запятую
                     string rsp_body = u_data[0] + "," + u_data[1] + "," + u_data[2] + "," + u_data[3];
                     string rsp = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: " + to_string(rsp_body.size()) + "\r\n\r\n" + rsp_body;
                     nt.send(rsp);
@@ -75,7 +74,7 @@ void main1(net nt){
             }
         }
         // 2. Олимпиады за месяц (id шники)
-        else if("/api/olimps/" == path.substr(0, 12)){
+        else if(path.size() >= 12 && "/api/olimps/" == path.substr(0, 12)){
             string tg_id = path.substr(12);
             if(id_valid_data(tg_id, &db1) != -1){
                 vector<string> ids = get_suitable_olimps1(tg_id, &db1);
@@ -95,7 +94,7 @@ void main1(net nt){
             }
         }
         // 3. Конкретная олимпиада + ИИ поинт
-        else if("/api/olimp:" == path.substr(0, 11)){
+        else if(path.size() >= 11 && "/api/olimp:" == path.substr(0, 11)){
             size_t slash_pos = path.find('/', 11);
             if(slash_pos != string::npos){
                 string olimp_id = path.substr(11, slash_pos - 11);
@@ -106,19 +105,25 @@ void main1(net nt){
                     vector<string> u_data = get_user_info(tg_id, &db1);
                     
                     if(!ol_data.empty() && !u_data.empty()){
-                        // Запрос к AI
                         string ai_req = "Коротко в 1 предложение объясни почему олимпиада " + ol_data[1] + " (" + ol_data[9] + ") подходит ученику " + u_data[2] + " класса. Описание: " + ol_data[10];
                         string point = ask_ai(ai_req);
                         
-                        // Экранируем кавычки для валидного JSON (базовая очистка)
+                        // Защита: Очищаем строки от двойных кавычек и переносов, ломающих JSON на фронте
+                        string name_clean = ol_data[1];
+                        string desc_clean = ol_data[10];
                         size_t pos = 0;
                         while((pos = point.find("\"", pos)) != string::npos) { point.replace(pos, 1, "\\\""); pos += 2; }
                         while((pos = point.find("\n", pos)) != string::npos) { point.replace(pos, 1, " "); pos += 1; }
+                        
+                        pos = 0;
+                        while((pos = name_clean.find("\"", pos)) != string::npos) { name_clean.replace(pos, 1, "\\\""); pos += 2; }
+                        pos = 0;
+                        while((pos = desc_clean.find("\"", pos)) != string::npos) { desc_clean.replace(pos, 1, "\\\""); pos += 2; }
 
-                        // Формируем JSON руками
+                        // Формируем валидный JSON
                         string rsp_body = "{\n";
                         rsp_body += "\"id\": " + ol_data[0] + ",\n";
-                        rsp_body += "\"name_1\": \"" + ol_data[1] + "\",\n";
+                        rsp_body += "\"name_1\": \"" + name_clean + "\",\n";
                         rsp_body += "\"date_start\": \"" + ol_data[2] + "\",\n";
                         rsp_body += "\"date_end\": \"" + ol_data[3] + "\",\n";
                         rsp_body += "\"class_start\": " + ol_data[4] + ",\n";
@@ -127,7 +132,7 @@ void main1(net nt){
                         rsp_body += "\"frm\": \"" + ol_data[7] + "\",\n";
                         rsp_body += "\"lnk\": \"" + ol_data[8] + "\",\n";
                         rsp_body += "\"subjects\": \"" + ol_data[9] + "\",\n";
-                        rsp_body += "\"description_1\": \"" + ol_data[10] + "\",\n";
+                        rsp_body += "\"description_1\": \"" + desc_clean + "\",\n";
                         rsp_body += "\"point\": \"" + point + "\"\n";
                         rsp_body += "}";
 
