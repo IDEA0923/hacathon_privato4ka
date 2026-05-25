@@ -1,853 +1,514 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <meta name="theme-color" content="#5b5bf6" />
-  <title>AI-рекрутер олимпиад</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <style>
-/* ===== reset.css ===== */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body {
-  height: 100%;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 16px; line-height: 1.5;
-  color: var(--color-text); background: var(--color-bg);
-  -webkit-font-smoothing: antialiased;
-}
-a { color: inherit; text-decoration: none; }
-button { font-family: inherit; cursor: pointer; border: none; background: none; }
-input, select, textarea { font-family: inherit; font-size: inherit; }
-ul, ol { list-style: none; }
-img { max-width: 100%; display: block; }
-
-/* ===== variables.css ===== */
-:root {
-  --color-bg:           var(--tg-theme-secondary-bg-color, #f6f7fb);
-  --color-surface:      var(--tg-theme-bg-color, #ffffff);
-  --color-surface-2:    var(--tg-theme-secondary-bg-color, #f0f2f8);
-  --color-text:         var(--tg-theme-text-color, #1a1b2e);
-  --color-text-muted:   var(--tg-theme-hint-color, #6b7280);
-  --color-border:       var(--tg-theme-section-separator-color, #e5e7eb);
-  --color-primary:       var(--tg-theme-button-color, #5b5bf6);
-  --color-primary-text:  var(--tg-theme-button-text-color, #ffffff);
-  --color-primary-hover: var(--tg-theme-button-color, #4848d6);
-  --color-primary-light: rgba(91, 91, 246, 0.12);
-  --color-link:    var(--tg-theme-link-color, #5b5bf6);
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  --color-danger:  var(--tg-theme-destructive-text-color, #ef4444);
-  --level-1: #ef4444;
-  --level-2: #f59e0b;
-  --level-3: #10b981;
-  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
-  --shadow-lg: 0 12px 32px rgba(0,0,0,0.18);
-  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
-  --space-5: 20px; --space-6: 28px; --space-8: 40px;
-  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --font-h1: 700 22px/1.25 var(--font-sans);
-  --font-h2: 600 18px/1.3  var(--font-sans);
-  --font-h3: 600 16px/1.4  var(--font-sans);
-  --safe-top:    env(safe-area-inset-top, 0px);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --tabbar-h: 56px;
-}
-
-/* ===== main.css ===== */
-html, body { overflow-x: hidden; }
-body { padding-bottom: calc(var(--tabbar-h) + var(--safe-bottom)); }
-
-.container { max-width: 1200px; margin: 0 auto; padding: 0 var(--space-5); width: 100%; }
-
-.header {
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-  padding: var(--space-4) 0;
-  padding-top: calc(var(--space-4) + var(--safe-top));
-  position: sticky; top: 0; z-index: 100;
-}
-.header__inner { display: flex; align-items: center; justify-content: space-between; gap: var(--space-5); }
-.logo { font: var(--font-h3); color: var(--color-primary); display: flex; align-items: center; gap: var(--space-2); }
-.nav { display: flex; gap: var(--space-5); }
-.nav a { color: var(--color-text-muted); font-weight: 500; transition: color 0.15s; }
-.nav a:hover, .nav a.active { color: var(--color-primary); }
-.main { padding: var(--space-6) 0 var(--space-8); min-height: calc(100vh - 80px); }
-
-.tabbar {
-  display: none;
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 200;
-  background: var(--color-surface);
-  border-top: 1px solid var(--color-border);
-  padding-bottom: var(--safe-bottom);
-  box-shadow: 0 -4px 16px rgba(0,0,0,0.04);
-}
-.tabbar__item {
-  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 2px; height: var(--tabbar-h); color: var(--color-text-muted);
-  font-size: 11px; font-weight: 500; transition: color 0.15s; -webkit-tap-highlight-color: transparent;
-}
-.tabbar__item:active { background: var(--color-surface-2); }
-.tabbar__icon { font-size: 22px; line-height: 1; }
-.tabbar__item--active { color: var(--color-primary); }
-.tabbar__item--active .tabbar__icon { transform: scale(1.08); }
-
-.page-head {
-  display: flex; justify-content: space-between; align-items: center;
-  flex-wrap: wrap; gap: var(--space-3); margin-bottom: var(--space-5);
-}
-.page-head__title { margin-bottom: 4px; }
-
-h1 { font: var(--font-h1); margin-bottom: var(--space-4); }
-h2 { font: var(--font-h2); margin-bottom: var(--space-3); }
-h3 { font: var(--font-h3); margin-bottom: var(--space-2); }
-.muted { color: var(--color-text-muted); }
-.text-sm { font-size: 14px; }
-
-.btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  gap: var(--space-2); padding: 12px 20px; min-height: 44px;
-  border-radius: var(--radius-md); font-weight: 600; font-size: 15px;
-  transition: all 0.15s; white-space: nowrap; -webkit-tap-highlight-color: transparent;
-}
-.btn--block { width: 100%; }
-.btn--primary { background: var(--color-primary); color: #fff; }
-.btn--primary:hover { background: var(--color-primary-hover); }
-.btn--secondary { background: var(--color-surface); color: var(--color-text); border: 1px solid var(--color-border); }
-.btn--secondary:hover { background: var(--color-surface-2); }
-.btn--ghost { background: transparent; color: var(--color-primary); }
-.btn--ghost:hover { background: var(--color-primary-light); }
-.btn--danger { background: var(--color-danger); color: #fff; }
-.btn--sm { padding: 6px 12px; font-size: 13px; }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-.form {
-  background: var(--color-surface); padding: var(--space-6);
-  border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); max-width: 720px;
-}
-.form__group { margin-bottom: var(--space-5); }
-.form__label { display: block; font-weight: 600; margin-bottom: var(--space-2); font-size: 14px; }
-.form__input, .form__select, .form__textarea {
-  width: 100%; padding: 12px 14px; min-height: 44px; font-size: 16px;
-  border: 1px solid var(--color-border); border-radius: var(--radius-md);
-  background: var(--color-surface); color: var(--color-text);
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-.form__textarea { min-height: 88px; resize: vertical; }
-.form__actions { display: flex; gap: var(--space-3); flex-wrap: wrap; }
-.form__actions .btn { flex: 1 1 auto; }
-.form__input:focus, .form__select:focus, .form__textarea:focus {
-  outline: none; border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-light);
-}
-.form__hint { font-size: 13px; color: var(--color-text-muted); margin-top: var(--space-1); }
-
-.chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-.chip {
-  display: inline-flex; align-items: center; padding: 8px 14px;
-  border: 1px solid var(--color-border); border-radius: 999px;
-  font-size: 14px; cursor: pointer; user-select: none;
-  transition: all 0.15s; background: var(--color-surface);
-}
-.chip input { display: none; }
-.chip:hover { border-color: var(--color-primary); }
-.chip--active { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
-
-.cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: var(--space-4);
-}
-.card {
-  background: var(--color-surface); border-radius: var(--radius-lg);
-  padding: var(--space-5); box-shadow: var(--shadow-sm);
-  transition: box-shadow 0.2s, transform 0.2s;
-  display: flex; flex-direction: column; gap: var(--space-3);
-}
-.card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
-.card__header { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-2); }
-.card__title { font: var(--font-h3); margin: 0; }
-.card__meta { font-size: 13px; color: var(--color-text-muted); display: flex; flex-wrap: wrap; gap: var(--space-3); }
-.card__reason {
-  background: var(--color-primary-light); padding: var(--space-3);
-  border-radius: var(--radius-md); font-size: 14px;
-  color: var(--color-text); border-left: 3px solid var(--color-primary);
-}
-.card__actions { display: flex; gap: var(--space-2); margin-top: auto; }
-
-.badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; color: #fff; }
-.badge--level-1 { background: var(--level-1); }
-.badge--level-2 { background: var(--level-2); }
-.badge--level-3 { background: var(--level-3); }
-.badge--score { background: var(--color-primary); }
-
-.filters {
-  background: var(--color-surface); padding: var(--space-4);
-  border-radius: var(--radius-lg); margin-bottom: var(--space-5);
-  display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;
-}
-
-.calendar { display: flex; flex-direction: column; gap: var(--space-5); }
-.month { background: var(--color-surface); border-radius: var(--radius-lg); padding: var(--space-5); box-shadow: var(--shadow-sm); }
-.month__title { font: var(--font-h2); margin-bottom: var(--space-4); padding-bottom: var(--space-3); border-bottom: 2px solid var(--color-surface-2); }
-.event { display: flex; gap: var(--space-4); padding: var(--space-3) 0; border-bottom: 1px solid var(--color-surface-2); align-items: center; }
-.event:last-child { border-bottom: none; }
-.event__date { flex-shrink: 0; width: 60px; text-align: center; font-weight: 700; color: var(--color-primary); }
-.event__date-day { font-size: 22px; line-height: 1; }
-.event__date-month { font-size: 11px; text-transform: uppercase; color: var(--color-text-muted); }
-.event__body { flex: 1; }
-.event__title { font-weight: 600; margin-bottom: 2px; }
-.event__sub { font-size: 13px; color: var(--color-text-muted); }
-
-.toasts {
-  position: fixed; top: 80px; right: 24px;
-  display: flex; flex-direction: column; gap: var(--space-2);
-  z-index: 1000; max-width: 360px;
-}
-.toast {
-  background: var(--color-surface); border-left: 4px solid var(--color-primary);
-  padding: var(--space-3) var(--space-4); border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg); animation: slideIn 0.3s ease-out;
-}
-.toast--success { border-left-color: var(--color-success); }
-.toast--warning { border-left-color: var(--color-warning); }
-.toast--danger  { border-left-color: var(--color-danger); }
-.toast__title { font-weight: 600; margin-bottom: 2px; }
-.toast__body { font-size: 13px; color: var(--color-text-muted); }
-@keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-
-.hero { text-align: center; padding: var(--space-8) 0; }
-.hero h1 {
-  font-size: 48px; margin-bottom: var(--space-4);
-  background: linear-gradient(135deg, var(--color-primary) 0%, #a855f7 100%);
-  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-}
-.hero p { font-size: 18px; color: var(--color-text-muted); max-width: 640px; margin: 0 auto var(--space-6); }
-
-.features { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-4); margin-top: var(--space-8); }
-.feature { background: var(--color-surface); padding: var(--space-5); border-radius: var(--radius-lg); text-align: left; }
-.feature__icon { font-size: 32px; margin-bottom: var(--space-3); }
-
-.loading { text-align: center; padding: var(--space-8); color: var(--color-text-muted); }
-.empty   { text-align: center; padding: var(--space-8); color: var(--color-text-muted); }
-
-.skeleton {
-  background: linear-gradient(90deg, var(--color-surface-2) 25%, #e8eaf0 50%, var(--color-surface-2) 75%);
-  background-size: 200% 100%; animation: shimmer 1.5s infinite;
-  border-radius: var(--radius-sm); height: 16px;
-}
-@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-
-@media (max-width: 768px) {
-  .hero h1 { font-size: 32px; }
-  .header__inner { flex-wrap: wrap; }
-  .nav { width: 100%; justify-content: space-around; }
-  .cards { grid-template-columns: 1fr; }
-  .form { padding: var(--space-4); }
-}
-  </style>
-</head>
-<body>
-  <header class="header">
-    <div class="container header__inner">
-      <a href="/" class="logo" data-link>🎓 AI-рекрутер</a>
-      <nav class="nav nav--desktop">
-        <a href="/profile" data-link>Профиль</a>
-        <a href="/recommendations" data-link>Рекомендации</a>
-        <a href="/calendar" data-link>Календарь</a>
-      </nav>
-    </div>
-  </header>
-
-  <main class="main" id="app"></main>
-
-  <nav class="tabbar">
-    <a href="/" class="tabbar__item" data-link>
-      <span class="tabbar__icon">🏠</span>
-      <span class="tabbar__label">Главная</span>
-    </a>
-    <a href="/profile" class="tabbar__item" data-link>
-      <span class="tabbar__icon">👤</span>
-      <span class="tabbar__label">Профиль</span>
-    </a>
-    <a href="/recommendations" class="tabbar__item" data-link>
-      <span class="tabbar__icon">🎯</span>
-      <span class="tabbar__label">Подбор</span>
-    </a>
-    <a href="/calendar" class="tabbar__item" data-link>
-      <span class="tabbar__icon">📅</span>
-      <span class="tabbar__label">План</span>
-    </a>
-  </nav>
-
-  <script type="module">
-// ============================================================
-// utils.js
-// ============================================================
-const MONTHS_GENITIVE = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
-const MONTHS_NOMINATIVE = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
-const MONTHS_SHORT = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
-
-function formatDate(iso) {
-  const d = new Date(iso);
-  if (isNaN(d)) return iso;
-  return `${d.getDate()} ${MONTHS_GENITIVE[d.getMonth()]} ${d.getFullYear()}`;
-}
-function daysLeft(iso) { return Math.ceil((new Date(iso) - new Date()) / 86400000); }
-function deadlineLabel(iso) {
-  const d = daysLeft(iso);
-  if (d < 0) return 'просрочено';
-  if (d === 0) return 'сегодня';
-  if (d === 1) return 'завтра';
-  if (d <= 7) return `через ${d} дн.`;
-  return formatDate(iso);
-}
-
-function el(tag, opts = {}, children = []) {
-  const node = document.createElement(tag);
-  if (opts.class) node.className = opts.class;
-  if (opts.text != null) node.textContent = opts.text;
-  if (opts.html != null) node.innerHTML = opts.html;
-  if (opts.attrs) for (const [k, v] of Object.entries(opts.attrs)) node.setAttribute(k, v);
-  if (opts.on) for (const [evt, fn] of Object.entries(opts.on)) node.addEventListener(evt, fn);
-  if (opts.style) Object.assign(node.style, opts.style);
-  for (const child of [].concat(children)) {
-    if (child == null || child === false) continue;
-    node.appendChild(typeof child === 'string' ? document.createTextNode(child) : child);
-  }
-  return node;
-}
-function $(selector, root = document) { return root.querySelector(selector); }
-function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
-function groupByMonth(items, dateField = 'deadline') {
-  const map = new Map();
-  for (const it of items) {
-    const d = new Date(it[dateField]);
-    if (isNaN(d)) continue;
-    const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2,'0')}`;
-    if (!map.has(key)) map.set(key, { year: d.getFullYear(), month: d.getMonth(), items: [] });
-    map.get(key).items.push(it);
-  }
-  return Array.from(map.values()).sort((a,b) => a.year - b.year || a.month - b.month);
-}
-function skeletonCard() {
-  return el('div', { class: 'card' }, [
-    el('div', { class: 'skeleton', style: { width: '60%', height: '20px' } }),
-    el('div', { class: 'skeleton', style: { width: '40%', marginTop: '8px' } }),
-    el('div', { class: 'skeleton', style: { width: '100%', height: '60px', marginTop: '12px' } }),
-  ]);
-}
-
-// ============================================================
-// api.js
-// ============================================================
-const API_BASE = '/api';
-
-const Auth = {
-  getUserId() {
-    let id = localStorage.getItem('user_id');
-    if (!id) { id = 'u_' + Math.random().toString(36).slice(2, 10); localStorage.setItem('user_id', id); }
-    return id;
-  },
-  reset() { localStorage.removeItem('user_id'); localStorage.removeItem('profile'); },
-};
-
-async function apiRequest(endpoint, options = {}) {
-  const url = `${API_BASE}${endpoint}`;
-  const opts = { headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }, ...options };
-  if (opts.body && typeof opts.body !== 'string') opts.body = JSON.stringify(opts.body);
-  try {
-    const res = await fetch(url, opts);
-    if (!res.ok) { const text = await res.text().catch(() => ''); throw new Error(`API ${res.status}: ${text || res.statusText}`); }
-    if (res.status === 204) return null;
-    return await res.json();
-  } catch (err) { console.error(`[API] ${endpoint}`, err); throw err; }
-}
-
-// Mock data
-try { localStorage.setItem('mock', '1'); } catch (_) {}
-
-const MOCK_OLYMPIADS = [
-  { id:1, title:'Всероссийская олимпиада по математике', subjects:['математика'], level:1, grades:[9,10,11], region:'all', deadline:'2025-10-15', stage:'школьный этап', score:0.95, tags:['РСОШ','диплом → льготы при поступлении'] },
-  { id:2, title:'Олимпиада «Ломоносов» — физика', subjects:['физика'], level:1, grades:[10,11], region:'all', deadline:'2025-11-20', stage:'отборочный тур', score:0.88, tags:['МГУ','РСОШ'] },
-  { id:3, title:'Турнир Эйлера (математика)', subjects:['математика'], level:2, grades:[8], region:'all', deadline:'2025-12-05', stage:'дистанционный тур', score:0.82, tags:['8 класс','подготовка к ВсОШ'] },
-  { id:4, title:'Открытая олимпиада по информатике (Иннополис)', subjects:['информатика'], level:2, grades:[9,10,11], region:'all', deadline:'2025-10-30', stage:'онлайн-отбор', score:0.79, tags:['программирование','РСОШ'] },
-  { id:5, title:'Олимпиада «Высшая проба» — обществознание', subjects:['обществознание'], level:1, grades:[10,11], region:'all', deadline:'2025-11-10', stage:'отборочный', score:0.74, tags:['НИУ ВШЭ','РСОШ'] },
-  { id:6, title:'Региональный конкурс «Юный исследователь»', subjects:['биология','химия'], level:3, grades:[7,8,9], region:'Приморский край', deadline:'2026-02-15', stage:'заочный', score:0.68, tags:['проектная работа','регион'] },
-];
-const MOCK_REGIONS = ['Москва','Санкт-Петербург','Приморский край','Хабаровский край','Республика Татарстан','Новосибирская область','Свердловская область','Краснодарский край','Республика Башкортостан','Все регионы'];
-const MOCK_SUBJECTS = ['математика','физика','информатика','химия','биология','русский язык','литература','английский язык','история','обществознание','география','экономика'];
-const MOCK_REASONS = {
-  1:'У вас указан углублённый уровень по математике и 10 класс — ВсОШ это базовая траектория к диплому, дающему льготы БВИ при поступлении в любой вуз России.',
-  2:'Олимпиада «Ломоносов» входит в перечень РСОШ I уровня. Для вас (физика, 10–11 класс, продвинутый уровень) это шанс получить 100 баллов ЕГЭ или БВИ в МГУ.',
-  3:'Турнир Эйлера специально для 8 класса — это прямая подготовка к будущим этапам ВсОШ по математике. Уровень II РСОШ.',
-  4:'Информатика + олимпиадное программирование. Открытая олимпиада Иннополиса даёт льготы в технических вузах и подходит под ваш профиль.',
-  5:'Для гуманитарного трека «Высшая проба» — топовый выбор: РСОШ I уровня, диплом даёт БВИ в НИУ ВШЭ.',
-  6:'Региональный конкурс под ваш регион. Низкий порог входа, хорошо подходит для накопления опыта в 7–9 классах.',
-};
-
-function mockEnabled() { return localStorage.getItem('mock') === '1'; }
-function enableMock() { localStorage.setItem('mock', '1'); }
-
-function mockRecommend(filters) {
-  const profile = JSON.parse(localStorage.getItem('profile') || '{}');
-  let list = [...MOCK_OLYMPIADS];
-  if (filters.subject) list = list.filter(o => o.subjects.includes(filters.subject));
-  if (filters.level) list = list.filter(o => String(o.level) === String(filters.level));
-  if (profile.subjects?.length) {
-    list = list.map(o => {
-      const overlap = o.subjects.filter(s => profile.subjects.includes(s)).length;
-      const gradeMatch = profile.grade && o.grades.includes(Number(profile.grade)) ? 0.2 : 0;
-      return { ...o, score: Math.min(1, o.score * 0.5 + overlap * 0.25 + gradeMatch) };
-    });
-  }
-  return list.sort((a,b) => b.score - a.score);
-}
-
-const Api = {
-  async getProfile() {
-    if (mockEnabled()) return JSON.parse(localStorage.getItem('profile') || 'null');
-    try { return await apiRequest(`/profile?user_id=${Auth.getUserId()}`); }
-    catch { enableMock(); return JSON.parse(localStorage.getItem('profile') || 'null'); }
-  },
-  async saveProfile(profile) {
-    if (mockEnabled()) { localStorage.setItem('profile', JSON.stringify(profile)); return { ok: true }; }
-    try {
-      const r = await apiRequest('/profile', { method: 'POST', body: { user_id: Auth.getUserId(), ...profile } });
-      localStorage.setItem('profile', JSON.stringify(profile)); return r;
-    } catch { enableMock(); localStorage.setItem('profile', JSON.stringify(profile)); return { ok: true }; }
-  },
-  async getRecommendations(filters = {}) {
-    if (mockEnabled()) return mockRecommend(filters);
-    try { const p = new URLSearchParams({ user_id: Auth.getUserId(), ...filters }); return await apiRequest(`/recommendations?${p}`); }
-    catch { enableMock(); return mockRecommend(filters); }
-  },
-  async explain(id) {
-    if (mockEnabled()) { await new Promise(r => setTimeout(r, 700)); return { explanation: MOCK_REASONS[id] || 'Эта олимпиада подходит под ваш профиль по предметам и классу.' }; }
-    try { return await apiRequest(`/explain?user_id=${Auth.getUserId()}&olympiad_id=${id}`); }
-    catch { enableMock(); return Api.explain(id); }
-  },
-  async getPlan() {
-    if (mockEnabled()) { const ids = JSON.parse(localStorage.getItem('plan') || '[]'); return MOCK_OLYMPIADS.filter(o => ids.includes(o.id)); }
-    try { return await apiRequest(`/plan?user_id=${Auth.getUserId()}`); }
-    catch { enableMock(); return Api.getPlan(); }
-  },
-  async addToPlan(id) {
-    if (mockEnabled()) { const ids = JSON.parse(localStorage.getItem('plan') || '[]'); if (!ids.includes(id)) ids.push(id); localStorage.setItem('plan', JSON.stringify(ids)); return { ok: true }; }
-    try { return await apiRequest('/plan', { method: 'POST', body: { user_id: Auth.getUserId(), olympiad_id: id } }); }
-    catch { enableMock(); return Api.addToPlan(id); }
-  },
-  async removeFromPlan(id) {
-    if (mockEnabled()) { const ids = JSON.parse(localStorage.getItem('plan') || '[]').filter(x => x !== id); localStorage.setItem('plan', JSON.stringify(ids)); return { ok: true }; }
-    try { return await apiRequest(`/plan?user_id=${Auth.getUserId()}&olympiad_id=${id}`, { method: 'DELETE' }); }
-    catch { enableMock(); return Api.removeFromPlan(id); }
-  },
-  async getNotifications() {
-    if (mockEnabled()) {
-      const plan = await Api.getPlan(); const now = new Date();
-      return plan.map(o => ({ ...o, daysLeft: Math.ceil((new Date(o.deadline) - now) / 86400000) })).filter(o => o.daysLeft >= 0 && o.daysLeft <= 14);
-    }
-    try { return await apiRequest(`/notifications?user_id=${Auth.getUserId()}`); }
-    catch { enableMock(); return Api.getNotifications(); }
-  },
-  async getRegions() {
-    if (mockEnabled()) return MOCK_REGIONS;
-    try { return await apiRequest('/regions'); } catch { enableMock(); return MOCK_REGIONS; }
-  },
-  async getSubjects() {
-    if (mockEnabled()) return MOCK_SUBJECTS;
-    try { return await apiRequest('/subjects'); } catch { enableMock(); return MOCK_SUBJECTS; }
-  },
-};
-
-// ============================================================
-// notifications.js
-// ============================================================
-function ensureToastContainer() {
-  let c = document.querySelector('.toasts');
-  if (!c) { c = el('div', { class: 'toasts' }); document.body.appendChild(c); }
-  return c;
-}
-function toast(title, body = '', type = 'info', ttl = 5000) {
-  const c = ensureToastContainer();
-  const node = el('div', { class: `toast toast--${type}` }, [
-    el('div', { class: 'toast__title', text: title }),
-    body && el('div', { class: 'toast__body', text: body }),
-  ]);
-  c.appendChild(node);
-  setTimeout(() => { node.style.transition = 'opacity 0.3s'; node.style.opacity = '0'; setTimeout(() => node.remove(), 300); }, ttl);
-}
-async function checkUpcoming() {
-  try {
-    const items = await Api.getNotifications();
-    if (!items || !items.length) return;
-    items.slice(0, 3).forEach(o => {
-      const days = o.daysLeft ?? null;
-      toast(o.title, `Дедлайн: ${deadlineLabel(o.deadline)}`, days != null && days <= 3 ? 'warning' : 'info', 7000);
-    });
-  } catch (e) { console.warn('Не удалось проверить дедлайны', e); }
-}
-
-// ============================================================
-// telegram.js
-// ============================================================
-const tg = window.Telegram?.WebApp;
-function initTelegram() {
-  if (!tg) return null;
-  try {
-    tg.ready(); tg.expand();
-    if (typeof tg.requestFullscreen === 'function') try { tg.requestFullscreen(); } catch (_) {}
-    if (typeof tg.setHeaderColor === 'function') try { tg.setHeaderColor('secondary_bg_color'); } catch (_) {}
-    if (typeof tg.disableVerticalSwipes === 'function') try { tg.disableVerticalSwipes(); } catch (_) {}
-  } catch (e) { console.warn('TG init failed', e); }
-  return tg;
-}
-function setupBackButton() {
-  if (!tg?.BackButton) return;
-  const isHome = location.pathname === '/' || location.pathname.endsWith('/index.html');
-  if (isHome) { tg.BackButton.hide(); }
-  else { tg.BackButton.show(); tg.BackButton.onClick(() => { if (history.length > 1) history.back(); else location.href = '/'; }); }
-}
-function haptic(type = 'light') { try { tg?.HapticFeedback?.impactOccurred?.(type); } catch (_) {} }
-function highlightActiveTab() {
-  const path = location.pathname.replace(/\/$/, '') || '/';
-  document.querySelectorAll('.tabbar__item').forEach(a => {
-    const href = a.getAttribute('href') || '';
-    const norm = href.replace(/\/$/, '') || '/';
-    const isActive = norm === path || (norm === '/' && (path === '' || path === '/index.html')) || (norm !== '/' && path.endsWith(norm));
-    a.classList.toggle('tabbar__item--active', isActive);
-  });
-}
-initTelegram();
-setupBackButton();
-
-// ============================================================
-// Page renderers  (profile / recommendations / calendar)
-// ============================================================
-
-// ---------- Profile page ----------
-async function initProfilePage() {
-  const form = $('#profile-form');
-  const subjectsBox = $('#subjects');
-  const regionSelect = $('#region');
-  let selectedSubjects = new Set();
-
-  const [regions, subjects] = await Promise.all([Api.getRegions(), Api.getSubjects()]);
-
-  clear(regionSelect);
-  regionSelect.appendChild(el('option', { text: '— выберите —', attrs: { value: '' } }));
-  regions.forEach(r => regionSelect.appendChild(el('option', { text: r, attrs: { value: r } })));
-
-  clear(subjectsBox);
-  subjects.forEach(s => {
-    const chip = el('label', { class: 'chip' }, [el('input', { attrs: { type: 'checkbox', value: s } }), s]);
-    const input = chip.querySelector('input');
-    input.addEventListener('change', () => {
-      if (input.checked) { selectedSubjects.add(s); chip.classList.add('chip--active'); }
-      else { selectedSubjects.delete(s); chip.classList.remove('chip--active'); }
-    });
-    subjectsBox.appendChild(chip);
-  });
-
-  const profile = await Api.getProfile();
-  if (profile) {
-    if (profile.name) $('#name').value = profile.name;
-    if (profile.grade) $('#grade').value = profile.grade;
-    if (profile.region) regionSelect.value = profile.region;
-    if (profile.level) $('#level').value = profile.level;
-    if (profile.past) $('#past').value = profile.past;
-    if (Array.isArray(profile.subjects)) {
-      profile.subjects.forEach(s => {
-        const input = subjectsBox.querySelector(`input[value="${s}"]`);
-        if (input) { input.checked = true; input.dispatchEvent(new Event('change')); }
-      });
-    }
-  }
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (selectedSubjects.size === 0) { toast('Выберите хотя бы один предмет', '', 'warning'); return; }
-    const data = {
-      name: $('#name').value.trim(),
-      grade: Number($('#grade').value),
-      region: regionSelect.value,
-      level: $('#level').value,
-      past: $('#past').value.trim(),
-      subjects: Array.from(selectedSubjects),
-    };
-    const btn = form.querySelector('button[type="submit"]');
-    btn.disabled = true; btn.textContent = 'Сохраняем...';
-    try {
-      await Api.saveProfile(data);
-      toast('Профиль сохранён', 'Переходим к рекомендациям...', 'success', 2000);
-      setTimeout(() => navigate('/recommendations'), 800);
-    } catch (err) {
-      toast('Ошибка сохранения', err.message, 'danger');
-      btn.disabled = false; btn.textContent = 'Сохранить и продолжить';
-    }
-  });
-}
-
-// ---------- Recommendations page ----------
-async function initRecommendationsPage() {
-  const listEl = $('#recommendations');
-  const subjectFilter = $('#filter-subject');
-  const levelFilter = $('#filter-level');
-  const resetBtn = $('#filter-reset');
-  let allItems = [];
-  let planIds = new Set();
-
-  // Skeletons
-  clear(listEl);
-  for (let i = 0; i < 6; i++) listEl.appendChild(skeletonCard());
-
-  const [subjects, recs, plan] = await Promise.all([Api.getSubjects(), Api.getRecommendations(), Api.getPlan()]);
-  subjects.forEach(s => subjectFilter.appendChild(el('option', { text: s, attrs: { value: s } })));
-  allItems = recs || [];
-  planIds = new Set((plan || []).map(p => p.id));
-
-  function applyFilters(items) {
-    const sub = subjectFilter.value, lvl = levelFilter.value;
-    return items.filter(o => { if (sub && !o.subjects.includes(sub)) return false; if (lvl && String(o.level) !== lvl) return false; return true; });
-  }
-  function romanLevel(l) { return ['','I','II','III'][l] || '?'; }
-  function formatGrades(g) { if (!g || !g.length) return '—'; if (g.length === 1) return g[0]; return `${Math.min(...g)}–${Math.max(...g)}`; }
-
-  function renderCard(o) {
-    const inPlan = planIds.has(o.id);
-    const scorePct = Math.round((o.score || 0) * 100);
-    const reasonBox = el('div', { class: 'card__reason', style: { display: 'none' } });
-    const explainBtn = el('button', { class: 'btn btn--ghost btn--sm', text: '💡 Почему мне?' });
-    explainBtn.addEventListener('click', async () => {
-      if (reasonBox.style.display === 'block') { reasonBox.style.display = 'none'; return; }
-      reasonBox.style.display = 'block';
-      reasonBox.innerHTML = '<em class="muted">AI готовит обоснование...</em>';
-      try { const res = await Api.explain(o.id); reasonBox.textContent = res.explanation || 'Обоснование недоступно.'; }
-      catch (err) { reasonBox.textContent = 'Не удалось получить обоснование: ' + err.message; }
-    });
-    const planBtn = el('button', { class: inPlan ? 'btn btn--secondary btn--sm' : 'btn btn--primary btn--sm', text: inPlan ? '✓ В плане' : '+ В план' });
-    planBtn.addEventListener('click', async () => {
-      planBtn.disabled = true;
-      try {
-        if (planIds.has(o.id)) {
-          await Api.removeFromPlan(o.id); planIds.delete(o.id);
-          planBtn.textContent = '+ В план'; planBtn.className = 'btn btn--primary btn--sm';
-          toast('Удалено из плана', o.title, 'info', 2500);
-        } else {
-          await Api.addToPlan(o.id); planIds.add(o.id);
-          planBtn.textContent = '✓ В плане'; planBtn.className = 'btn btn--secondary btn--sm';
-          toast('Добавлено в план', o.title, 'success', 2500);
+    <meta charset="UTF-8" />
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#5b5bf6" />
+    <title>AI-рекрутер олимпиад</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
-      } catch (err) { toast('Ошибка', err.message, 'danger'); }
-      finally { planBtn.disabled = false; }
-    });
-    return el('div', { class: 'card' }, [
-      el('div', { class: 'card__header' }, [el('h3', { class: 'card__title', text: o.title }), el('span', { class: `badge badge--level-${o.level}`, text: `${romanLevel(o.level)} ур.` })]),
-      el('div', { class: 'card__meta' }, [
-        el('span', { text: `📚 ${o.subjects.join(', ')}` }),
-        el('span', { text: `🎓 ${formatGrades(o.grades)} класс` }),
-        el('span', { text: `📅 ${deadlineLabel(o.deadline)}` }),
-        o.stage && el('span', { text: `🏁 ${o.stage}` }),
-      ]),
-      o.tags?.length && el('div', { class: 'card__meta' }, o.tags.map(t => el('span', { class: 'badge', text: t, style: { background: 'var(--color-surface-2)', color: 'var(--color-text-muted)' } }))),
-      el('div', { class: 'card__meta' }, [el('span', { text: `🎯 Релевантность: ${scorePct}%`, style: { color: 'var(--color-primary)', fontWeight: 600 } })]),
-      reasonBox,
-      el('div', { class: 'card__actions' }, [explainBtn, planBtn]),
-    ]);
-  }
 
-  function renderList() {
-    const items = applyFilters(allItems);
-    clear(listEl);
-    if (!items.length) { listEl.appendChild(el('div', { class: 'empty', text: 'Под выбранные фильтры ничего не нашлось.' })); return; }
-    items.forEach(o => listEl.appendChild(renderCard(o)));
-  }
+        html,
+        body {
+            height: 100%;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 16px;
+            line-height: 1.5;
+            color: var(--tg-theme-text-color, #1a1b2e);
+            background: var(--tg-theme-secondary-bg-color, #f6f7fb);
+            -webkit-font-smoothing: antialiased;
+        }
 
-  subjectFilter.addEventListener('change', renderList);
-  levelFilter.addEventListener('change', renderList);
-  resetBtn.addEventListener('click', () => { subjectFilter.value = ''; levelFilter.value = ''; renderList(); });
-  renderList();
-}
+        a {
+            color: var(--tg-theme-link-color, #5b5bf6);
+            text-decoration: none;
+        }
 
-// ---------- Calendar page ----------
-async function initCalendarPage() {
-  const root = $('#calendar');
-  const exportBtn = $('#export-ics');
+        button {
+            font-family: inherit;
+            cursor: pointer;
+            border: none;
+            background: none;
+        }
 
-  async function loadAndRender() {
-    clear(root);
-    root.appendChild(el('div', { class: 'loading', text: 'Загружаем ваш план...' }));
-    try { const plan = await Api.getPlan(); renderCal(plan || []); }
-    catch (err) { clear(root); root.appendChild(el('div', { class: 'empty', text: 'Не удалось загрузить план: ' + err.message })); }
-  }
+        :root {
+            --color-bg: var(--tg-theme-secondary-bg-color, #f6f7fb);
+            --color-surface: var(--tg-theme-bg-color, #ffffff);
+            --color-text: var(--tg-theme-text-color, #1a1b2e);
+            --color-text-muted: var(--tg-theme-hint-color, #6b7280);
+            --color-border: var(--tg-theme-section-separator-color, #e5e7eb);
+            --color-primary: var(--tg-theme-button-color, #5b5bf6);
+            --color-primary-text: var(--tg-theme-button-text-color, #ffffff);
+            --color-primary-hover: #4848d6;
+            --color-primary-light: rgba(91, 91, 246, 0.12);
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 20px;
+            --space-6: 28px;
+            --space-8: 40px;
+            --font-h1: 700 22px/1.25 -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+            --font-h2: 600 18px/1.3 -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+            --font-h3: 600 16px/1.4 -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
 
-  function renderCal(items) {
-    clear(root);
-    if (!items.length) {
-      root.appendChild(el('div', { class: 'empty' }, [
-        el('h3', { text: 'План пока пуст' }),
-        el('p', { class: 'muted', text: 'Перейдите в раздел «Рекомендации» и добавьте интересующие олимпиады.' }),
-        el('a', { class: 'btn btn--primary', attrs: { href: '/recommendations' }, text: 'К рекомендациям →', style: { marginTop: '16px', display: 'inline-block' } }),
-      ]));
-      return;
-    }
-    groupByMonth(items, 'deadline').forEach(m => root.appendChild(monthBlock(m)));
-  }
+        body {
+            padding-bottom: calc(56px + var(--safe-bottom));
+        }
 
-  function monthBlock(m) {
-    return el('div', { class: 'month' }, [
-      el('h2', { class: 'month__title', text: `${MONTHS_NOMINATIVE[m.month]} ${m.year}` }),
-      ...m.items.sort((a,b) => new Date(a.deadline) - new Date(b.deadline)).map(eventRow),
-    ]);
-  }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 var(--space-5);
+            width: 100%;
+        }
 
-  function eventRow(o) {
-    const d = new Date(o.deadline);
-    const removeBtn = el('button', { class: 'btn btn--ghost btn--sm', text: '🗑' });
-    removeBtn.addEventListener('click', async () => {
-      if (!confirm(`Удалить «${o.title}» из плана?`)) return;
-      try { await Api.removeFromPlan(o.id); toast('Удалено из плана', o.title, 'info', 2500); loadAndRender(); }
-      catch (err) { toast('Ошибка', err.message, 'danger'); }
-    });
-    return el('div', { class: 'event' }, [
-      el('div', { class: 'event__date' }, [el('div', { class: 'event__date-day', text: d.getDate() }), el('div', { class: 'event__date-month', text: MONTHS_SHORT[d.getMonth()] })]),
-      el('div', { class: 'event__body' }, [el('div', { class: 'event__title', text: o.title }), el('div', { class: 'event__sub', text: `${o.subjects?.join(', ') || ''} · ${o.stage || 'дедлайн'} · ${deadlineLabel(o.deadline)}` })]),
-      removeBtn,
-    ]);
-  }
+        .header {
+            background: var(--color-surface);
+            border-bottom: 1px solid var(--color-border);
+            padding: var(--space-4) 0;
+            padding-top: calc(var(--space-4) + var(--safe-top));
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
 
-  exportBtn.addEventListener('click', async () => {
-    try {
-      const plan = await Api.getPlan();
-      if (!plan || !plan.length) { toast('План пуст', 'Добавьте олимпиады в рекомендациях.', 'warning'); return; }
-      const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//AI-recruiter//Olympiads//RU','CALSCALE:GREGORIAN'];
-      plan.forEach(o => {
-        const d = new Date(o.deadline);
-        const dateStr = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
-        lines.push('BEGIN:VEVENT',`UID:olymp-${o.id}@ai-recruiter`,`DTSTAMP:${dateStr}T090000Z`,`DTSTART;VALUE=DATE:${dateStr}`,`SUMMARY:${(o.title||'').replace(/[\n,;]/g,' ')}`,`DESCRIPTION:Предметы: ${(o.subjects||[]).join(', ')}. Этап: ${o.stage||'—'}.`,'END:VEVENT');
-      });
-      lines.push('END:VCALENDAR');
-      const blob = new Blob([lines.join('\r\n')], { type: 'text/calendar' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = 'olympiads.ics'; a.click();
-      URL.revokeObjectURL(url);
-      toast('Готово', 'Файл olympiads.ics скачан.', 'success');
-    } catch (err) { toast('Ошибка экспорта', err.message, 'danger'); }
-  });
+        .header__inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--space-5);
+        }
 
-  loadAndRender();
-}
+        .logo {
+            font: var(--font-h3);
+            color: var(--color-primary);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
 
-// ============================================================
-// router.js
-// ============================================================
-const ROUTES = {
-  '/': () => `
-    <section class="container">
-      <div class="hero">
-        <h1>Найди свою олимпиаду</h1>
-        <p>Агрегатор всех российских олимпиад, конкурсов и научных конференций для школьников.
-        Заполни профиль — получи персональный план участия на учебный год с дедлайнами и AI-обоснованиями выбора.</p>
-        <a href="/profile" class="btn btn--primary" data-link>Начать →</a>
-      </div>
-      <div class="features">
-        <div class="feature"><div class="feature__icon">📚</div><h3>Все источники</h3><p class="muted">РСОШ, перечень Минпросвещения, региональные реестры — собираем в одном месте.</p></div>
-        <div class="feature"><div class="feature__icon">🎯</div><h3>Персональные рекомендации</h3><p class="muted">Подбор по предметам, классу, региону и уровню подготовки.</p></div>
-        <div class="feature"><div class="feature__icon">🤖</div><h3>AI-обоснования</h3><p class="muted">LLM объясняет: почему именно эта олимпиада подходит именно тебе.</p></div>
-        <div class="feature"><div class="feature__icon">📅</div><h3>Календарь дедлайнов</h3><p class="muted">Все ключевые даты в одном месте + умные оповещения.</p></div>
-      </div>
-    </section>`,
+        .main {
+            padding: var(--space-6) 0 var(--space-8);
+            min-height: calc(100vh - 80px);
+        }
 
-  '/profile': () => `
-    <div class="container">
-      <h1>Профиль школьника</h1>
-      <p class="muted" style="margin-bottom:24px;">Заполни анкету — мы подберём олимпиады под твой профиль.</p>
-      <form id="profile-form" class="form">
-        <div class="form__group"><label class="form__label" for="name">ФИО</label><input type="text" id="name" name="name" class="form__input" placeholder="Иванов Иван Иванович" required /></div>
-        <div class="form__group"><label class="form__label" for="grade">Класс</label>
-          <select id="grade" name="grade" class="form__select" required>
-            <option value="">— выберите —</option>
-            ${[5,6,7,8,9,10,11].map(g=>`<option value="${g}">${g}</option>`).join('')}
-          </select>
+        h1 {
+            font: var(--font-h1);
+            margin-bottom: var(--space-4);
+        }
+
+        h2 {
+            font: var(--font-h2);
+            margin-bottom: var(--space-3);
+        }
+
+        h3 {
+            font: var(--font-h3);
+            margin-bottom: var(--space-2);
+        }
+
+        .muted {
+            color: var(--color-text-muted);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+            padding: 12px 20px;
+            min-height: 44px;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .btn--primary {
+            background: var(--color-primary);
+            color: var(--color-primary-text);
+        }
+
+        .btn--primary:hover {
+            background: var(--color-primary-hover);
+        }
+
+        .btn--secondary {
+            background: var(--color-surface);
+            color: var(--color-text);
+            border: 1px solid var(--color-border);
+        }
+
+        .btn--ghost {
+            background: transparent;
+            color: var(--color-primary);
+        }
+
+        .btn--sm {
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .card {
+            background: var(--color-surface);
+            border-radius: var(--radius-lg);
+            padding: var(--space-5);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: var(--space-4);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+        }
+
+        .card__header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: var(--space-2);
+        }
+
+        .card__title {
+            font: var(--font-h3);
+            margin: 0;
+        }
+
+        .card__meta {
+            font-size: 13px;
+            color: var(--color-text-muted);
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-3);
+        }
+
+        .card__reason {
+            background: var(--color-primary-light);
+            padding: var(--space-3);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            color: var(--color-text);
+            border-left: 3px solid var(--color-primary);
+        }
+
+        .card__actions {
+            display: flex;
+            gap: var(--space-2);
+            margin-top: auto;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .badge--level-1 {
+            background: #ef4444;
+        }
+
+        .badge--level-2 {
+            background: #f59e0b;
+        }
+
+        .badge--level-3 {
+            background: #10b981;
+        }
+
+        .loading {
+            text-align: center;
+            padding: var(--space-8);
+            color: var(--color-text-muted);
+        }
+
+        .empty {
+            text-align: center;
+            padding: var(--space-8);
+            color: var(--color-text-muted);
+        }
+
+        .skeleton {
+            background: linear-gradient(90deg, var(--color-bg) 25%, #e8eaf0 50%, var(--color-bg) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 8px;
+            height: 16px;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: 200% 0;
+            }
+
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        .bot-link-banner {
+            background: var(--color-primary-light);
+            border: 1px solid var(--color-primary);
+            border-radius: var(--radius-lg);
+            padding: var(--space-4) var(--space-5);
+            margin-bottom: var(--space-5);
+            text-align: center;
+        }
+
+        .bot-link-banner p {
+            margin-bottom: var(--space-3);
+            font-size: 15px;
+        }
+
+        .bot-link-banner a {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            background: var(--color-primary);
+            color: var(--color-primary-text);
+            padding: 10px 20px;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .bot-link-banner a:hover {
+            background: var(--color-primary-hover);
+        }
+
+        @media (max-width: 768px) {
+            .header__inner {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="header">
+        <div class="container header__inner">
+            <a href="/" class="logo" data-link>🎓 AI-рекрутер</a>
         </div>
-        <div class="form__group"><label class="form__label" for="region">Регион</label><select id="region" name="region" class="form__select" required><option value="">Загрузка...</option></select></div>
-        <div class="form__group"><label class="form__label">Предметы (выберите несколько)</label><div id="subjects" class="chips"></div><p class="form__hint">Можно выбрать любое количество.</p></div>
-        <div class="form__group"><label class="form__label" for="level">Уровень подготовки</label>
-          <select id="level" name="level" class="form__select" required>
-            <option value="">— выберите —</option>
-            <option value="beginner">Начальный — пробую впервые</option>
-            <option value="intermediate">Средний — участвовал в школьных этапах</option>
-            <option value="advanced">Продвинутый — призёр / победитель</option>
-          </select>
-        </div>
-        <div class="form__group"><label class="form__label" for="past">Прошлые олимпиады (опционально)</label><textarea id="past" name="past" class="form__textarea" rows="3" placeholder="Например: призёр ВсОШ по математике, 9 класс"></textarea></div>
-        <div class="form__actions">
-          <button type="submit" class="btn btn--primary">Сохранить и продолжить</button>
-          <a href="/recommendations" class="btn btn--secondary" data-link>К рекомендациям →</a>
-        </div>
-      </form>
-    </div>`,
-
-  '/recommendations': () => `
-    <div class="container">
-      <h1>Подобрано для вас</h1>
-      <p class="muted" style="margin-bottom:24px;">Олимпиады отсортированы по релевантности вашему профилю.</p>
-      <div class="filters">
-        <select id="filter-subject" class="form__select"><option value="">Все предметы</option></select>
-        <select id="filter-level" class="form__select"><option value="">Все уровни</option><option value="1">I уровень</option><option value="2">II уровень</option><option value="3">III уровень</option></select>
-        <button id="filter-reset" class="btn btn--ghost btn--sm">Сбросить</button>
-      </div>
-      <div id="recommendations" class="cards"></div>
-    </div>`,
-
-  '/calendar': () => `
-    <div class="container">
-      <div class="page-head">
-        <div><h1 class="page-head__title">Календарь дедлайнов</h1><p class="muted">Все ключевые даты по олимпиадам в вашем плане.</p></div>
-        <button id="export-ics" class="btn btn--secondary">📥 Экспорт в .ics</button>
-      </div>
-      <div id="calendar" class="calendar"></div>
-    </div>`,
-};
-
-const PAGE_INITS = {
-  '/profile': initProfilePage,
-  '/recommendations': initRecommendationsPage,
-  '/calendar': initCalendarPage,
-};
-
-function navigate(path) {
-  const app = document.getElementById('app');
-  const routeFn = ROUTES[path] || ROUTES['/'];
-  app.innerHTML = routeFn();
-
-  // Active links
-  document.querySelectorAll('[data-link]').forEach(a => {
-    a.classList.toggle('active', a.getAttribute('href') === path);
-  });
-
-  // Highlight tab bar
-  highlightActiveTab();
-  setupBackButton();
-
-  // Run page init
-  const init = PAGE_INITS[path];
-  if (init) init();
-}
-
-document.addEventListener('click', e => {
-  const link = e.target.closest('[data-link]');
-  if (link) { e.preventDefault(); const p = link.getAttribute('href'); history.pushState(null, null, p); navigate(p); }
-});
-window.addEventListener('popstate', () => navigate(location.pathname));
-
-// Boot
-Auth.getUserId();
-navigate(location.pathname);
-checkUpcoming();
-document.addEventListener('DOMContentLoaded', highlightActiveTab);
-  </script>
+    </header>
+    <main class="main" id="app"></main>
+    <script type="module">
+        const tg = window.Telegram?.WebApp;
+        function initTelegram() {
+            if (!tg) return;
+            try { tg.ready(); tg.expand(); } catch (e) { console.warn('TG init failed', e); }
+        }
+        const Auth = {
+            getTgId() {
+                if (tg?.initDataUnsafe?.user?.id) return String(tg.initDataUnsafe.user.id);
+                let id = localStorage.getItem('tg_id');
+                if (!id) { id = '123456789'; localStorage.setItem('tg_id', id); }
+                return id;
+            },
+        };
+        initTelegram();
+        async function apiPost(path) {
+            try {
+                const res = await fetch(path, { method: 'POST' });
+                if (!res.ok) { const text = await res.text().catch(() => ''); throw new Error('API ' + res.status + ': ' + text); }
+                const ct = res.headers.get('content-type') || '';
+                if (ct.includes('application/json')) return await res.json();
+                return await res.text();
+            } catch (err) { console.error('[API] ' + path, err); throw err; }
+        }
+        const Api = {
+            async getProfile() {
+                const csv = await apiPost('/profile/' + Auth.getTgId());
+                if (typeof csv !== 'string' || !csv) return null;
+                const p = csv.split(',');
+                return { name: p[0] || '', subjects: p[1] || '', class: p[2] || '', region: p[3] || '' };
+            },
+            async getOlimpIds() {
+                const data = await apiPost('/api/olimps/' + Auth.getTgId());
+                return data?.ids || [];
+            },
+            async getOlimpDetail(id) {
+                return await apiPost('/api/olimp:' + id + '/' + Auth.getTgId());
+            },
+            async getAllOlimps() {
+                const ids = await Api.getOlimpIds();
+                const results = await Promise.allSettled(ids.map(id => Api.getOlimpDetail(id)));
+                return results.filter(r => r.status === 'fulfilled').map(r => r.value);
+            },
+        };
+        function el(tag, opts = {}, children = []) {
+            const node = document.createElement(tag);
+            if (opts.class) node.className = opts.class;
+            if (opts.text != null) node.textContent = opts.text;
+            if (opts.html != null) node.innerHTML = opts.html;
+            if (opts.attrs) for (const [k, v] of Object.entries(opts.attrs)) node.setAttribute(k, v);
+            if (opts.on) for (const [evt, fn] of Object.entries(opts.on)) node.addEventListener(evt, fn);
+            if (opts.style) Object.assign(node.style, opts.style);
+            for (const child of [].concat(children)) {
+                if (child == null || child === false) continue;
+                node.appendChild(typeof child === 'string' ? document.createTextNode(child) : child);
+            }
+            return node;
+        }
+        function $(s, r = document) { return r.querySelector(s); }
+        function clear(n) { while (n.firstChild) n.removeChild(n.firstChild); }
+        function deadlineLabel(iso) {
+            if (!iso) return '—';
+            const d = Math.ceil((new Date(iso) - new Date()) / 86400000);
+            if (d < 0) return 'просрочено';
+            if (d === 0) return 'сегодня';
+            if (d === 1) return 'завтра';
+            if (d <= 7) return 'через ' + d + ' дн.';
+            const dt = new Date(iso);
+            const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+            return dt.getDate() + ' ' + months[dt.getMonth()] + ' ' + dt.getFullYear();
+        }
+        function romanLevel(l) { return { '1': 'I', '2': 'II', '3': 'III' }[String(l)] || l || '?'; }
+        function skeletonCard() {
+            return el('div', { class: 'card' }, [
+                el('div', { class: 'skeleton', style: { width: '60%', height: '20px' } }),
+                el('div', { class: 'skeleton', style: { width: '40%', marginTop: '8px' } }),
+                el('div', { class: 'skeleton', style: { width: '100%', height: '60px', marginTop: '12px' } }),
+            ]);
+        }
+        function botBanner() {
+            return el('div', { class: 'bot-link-banner' }, [
+                el('p', { text: '🤖 Для полноценной работы перейдите в бота' }),
+                el('a', { attrs: { href: 'https://t.me/AI_olimp_hack_bot', target: '_blank' }, text: 'Открыть бота →' }),
+            ]);
+        }
+        function renderHome() {
+            const app = document.getElementById('app');
+            app.innerHTML = '';
+            const sec = el('section', { class: 'container' }, [
+                botBanner(),
+                el('div', { style: { textAlign: 'center', padding: 'var(--space-8) 0' } }, [
+                    el('h1', { text: 'Найди свою олимпиаду', style: { fontSize: '32px', marginBottom: 'var(--space-4)' } }),
+                    el('p', { class: 'muted', text: 'Персональные рекомендации олимпиад с AI-обоснованиями', style: { fontSize: '16px', maxWidth: '500px', margin: '0 auto var(--space-6)' } }),
+                    el('a', { class: 'btn btn--primary', attrs: { href: '/recommendations' }, text: 'Смотреть рекомендации →', on: { click: function (e) { e.preventDefault(); history.pushState(null, null, '/recommendations'); navigate('/recommendations'); } } }),
+                ]),
+            ]);
+            app.appendChild(sec);
+        }
+        async function renderProfile() {
+            const app = document.getElementById('app');
+            app.innerHTML = '';
+            const container = el('div', { class: 'container' }, [
+                el('h1', { text: 'Ваш профиль' }),
+                el('div', { id: 'profile-content' }),
+            ]);
+            app.appendChild(container);
+            const content = $('#profile-content');
+            content.appendChild(el('div', { class: 'loading', text: 'Загружаем профиль...' }));
+            try {
+                const profile = await Api.getProfile();
+                clear(content);
+                if (!profile || !profile.name) {
+                    content.appendChild(el('div', { class: 'empty' }, [
+                        el('h3', { text: 'Профиль не найден' }),
+                        el('p', { class: 'muted', text: 'Заполните профиль через бота @AI_olimp_hack_bot' }),
+                        el('a', { class: 'btn btn--primary', attrs: { href: 'https://t.me/AI_olimp_hack_bot', target: '_blank' }, text: '🤖 Перейти в бота', style: { marginTop: '16px', display: 'inline-block' } }),
+                    ]));
+                    return;
+                }
+                const fields = [{ label: 'Имя', value: profile.name }, { label: 'Предметы', value: profile.subjects }, { label: 'Класс', value: profile.class }, { label: 'Регион', value: profile.region }];
+                content.appendChild(el('div', { class: 'card' }, [
+                    el('h3', { text: 'Данные профиля' }),
+                    ...fields.map(f => el('div', { class: 'card__meta' }, [el('strong', { text: f.label + ': ' }), el('span', { text: String(f.value || '—') })])),
+                ]));
+            } catch (err) {
+                clear(content);
+                content.appendChild(el('div', { class: 'empty' }, [
+                    el('p', { text: 'Ошибка: ' + err.message }),
+                    el('a', { class: 'btn btn--primary', attrs: { href: 'https://t.me/AI_olimp_hack_bot', target: '_blank' }, text: '🤖 Перейти в бота', style: { marginTop: '16px', display: 'inline-block' } }),
+                ]));
+            }
+        }
+        async function renderRecommendations() {
+            const app = document.getElementById('app');
+            app.innerHTML = '';
+            const container = el('div', { class: 'container' }, [
+                botBanner(),
+                el('h1', { text: 'Подобрано для вас' }),
+                el('p', { class: 'muted', text: 'Олимпиады с AI-обоснованиями', style: { marginBottom: '24px' } }),
+                el('div', { id: 'recommendations' }),
+            ]);
+            app.appendChild(container);
+            const listEl = $('#recommendations');
+            for (let i = 0; i < 3; i++) listEl.appendChild(skeletonCard());
+            try {
+                const olimps = await Api.getAllOlimps();
+                clear(listEl);
+                if (!olimps.length) {
+                    listEl.appendChild(el('div', { class: 'empty' }, [
+                        el('h3', { text: 'Рекомендаций пока нет' }),
+                        el('p', { class: 'muted', text: 'Заполните профиль через бота' }),
+                        el('a', { class: 'btn btn--primary', attrs: { href: 'https://t.me/AI_olimp_hack_bot', target: '_blank' }, text: '🤖 Перейти в бота', style: { marginTop: '16px', display: 'inline-block' } }),
+                    ]));
+                    return;
+                }
+                olimps.forEach(o => {
+                    const reasonBox = el('div', { class: 'card__reason', style: { display: 'none' } });
+                    const explainBtn = el('button', { class: 'btn btn--ghost btn--sm', text: '💡 Почему мне?' });
+                    explainBtn.addEventListener('click', () => {
+                        if (reasonBox.style.display === 'block') { reasonBox.style.display = 'none'; }
+                        else { reasonBox.style.display = 'block'; reasonBox.textContent = o.point || 'Обоснование недоступно.'; }
+                    });
+                    const lvlBadge = o.lvl ? el('span', { class: 'badge badge--level-' + (o.lvl === '1' ? '1' : o.lvl === '2' ? '2' : '3'), text: romanLevel(o.lvl) + ' ур.' }) : null;
+                    const linkEl = o.lnk ? el('a', { text: '🔗 Ссылка', attrs: { href: o.lnk, target: '_blank' } }) : null;
+                    listEl.appendChild(el('div', { class: 'card' }, [
+                        el('div', { class: 'card__header' }, [el('h3', { class: 'card__title', text: o.name_1 || 'Олимпиада' }), lvlBadge]),
+                        el('div', { class: 'card__meta' }, [
+                            el('span', { text: '📚 ' + (o.subjects || '—') }),
+                            el('span', { text: '🎓 ' + (o.class_start || '') + '–' + (o.class_end || '') + ' класс' }),
+                            el('span', { text: '📅 ' + deadlineLabel(o.date_start) }),
+                        ]),
+                        el('div', { class: 'card__meta' }, [el('span', { text: '🏁 ' + (o.frm || '—') }), linkEl]),
+                        reasonBox,
+                        el('div', { class: 'card__actions' }, [explainBtn]),
+                    ]));
+                });
+            } catch (err) {
+                clear(listEl);
+                listEl.appendChild(el('div', { class: 'empty' }, [
+                    el('p', { text: 'Ошибка: ' + err.message }),
+                    el('a', { class: 'btn btn--primary', attrs: { href: 'https://t.me/AI_olimp_hack_bot', target: '_blank' }, text: '🤖 Перейти в бота', style: { marginTop: '16px', display: 'inline-block' } }),
+                ]));
+            }
+        }
+        const ROUTES = { '/': renderHome, '/profile': renderProfile, '/recommendations': renderRecommendations };
+        function navigate(path) {
+            const fn = ROUTES[path] || ROUTES['/'];
+            fn();
+            document.querySelectorAll('[data-link]').forEach(a => a.classList.toggle('active', a.getAttribute('href') === path));
+        }
+        document.addEventListener('click', e => {
+            const link = e.target.closest('[data-link]');
+            if (link) { e.preventDefault(); const p = link.getAttribute('href'); history.pushState(null, null, p); navigate(p); }
+        });
+        window.addEventListener('popstate', () => navigate(location.pathname));
+        navigate(location.pathname);
+    </script>
 </body>
+
 </html>
