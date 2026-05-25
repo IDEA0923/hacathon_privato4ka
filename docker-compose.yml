@@ -60,6 +60,24 @@ services:
       - app_network
     depends_on:
       - db
+  parser:
+    build: ./parser
+    container_name: parser
+    # По умолчанию запускается один раз и завершается.
+    # Команда: docker compose run --rm parser
+    profiles: ["tools"]
+    environment:
+      - POSTGRES_USER=${postgress_login}
+      - POSTGRES_PASSWORD=${postgress_password}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+    volumes:
+      - ./parser:/app:Z
+    networks:
+      - app_network
+    depends_on:
+      - db
   ngrok:
     image: ngrok/ngrok:latest
     restart: always
