@@ -7,8 +7,8 @@ services:
     container_name: postgress
     restart: always
     environment:
-      POSTGRES_USER: ${postgress_login}
-      POSTGRES_PASSWORD: ${postgress_password}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     # ports:
     #   - "5432:5432"
@@ -36,8 +36,8 @@ services:
       - TOKEN=${BOT_TOKEN}
       - TOKEN_AI=${TOKEN_AI}
       - TG_ADMIN_ID=${admin_id}
-      - POSTGRES_USER=${postgress_login}
-      - POSTGRES_PASSWORD=${postgress_password}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
     # ports:
     #   - "8080:80"
@@ -52,8 +52,8 @@ services:
     ports:
       - "${PORT}:443"
     environment:
-      - POSTGRES_USER=${postgress_login}
-      - POSTGRES_PASSWORD=${postgress_password}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
       - TOKEN_AI=${TOKEN_AI}
     networks:
@@ -67,8 +67,8 @@ services:
     # Команда: docker compose run --rm parser
     profiles: ["tools"]
     environment:
-      - POSTGRES_USER=${postgress_login}
-      - POSTGRES_PASSWORD=${postgress_password}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_HOST=db
       - POSTGRES_PORT=5432
