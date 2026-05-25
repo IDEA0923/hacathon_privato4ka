@@ -1,10 +1,14 @@
-from os import getenv
+import os
+from dotenv import load_dotenv
 
-POSTGRES_USER = getenv("POSTGRES_USER")
-POSTGRES_PASSWORD = getenv("POSTGRES_PASSWORD")
-POSTGRES_DB = getenv("POSTGRES_DB")
-POSTGRES_HOST = getenv("POSTGRES_HOST", "db")
-POSTGRES_PORT = 5432
+load_dotenv()
+
+# Маппим старые названия из .env на те, что используются в коде БД
+POSTGRES_USER = os.getenv("postgress_login", "admin")
+POSTGRES_PASSWORD = os.getenv("postgress_password", "X1imSH2iFhiqgxGBtx8M")
+POSTGRES_DB = os.getenv("POSTGRES_DB", "datab")
+POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
+POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", "5432"))
 
 # Общие настройки парсинга
 USER_AGENT = "(+contact: admin)"

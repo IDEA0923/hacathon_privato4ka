@@ -84,6 +84,7 @@ async def run(per_source_limit: int = 50) -> int:
 
 
 def main() -> None:
+    print("[+]start parsing")
     _setup_logging()
     try:
         inserted = asyncio.run(run())
