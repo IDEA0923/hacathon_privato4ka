@@ -39,7 +39,6 @@ void main1(net nt){
     
     string methot = message.substr(0, message.find(" "));
     cout<<"methot : "<<methot<<endl;
-    //cout<<"ask ai"<<ask_ai("ку ")<<endl;
     if(methot == "GET"){
         if(path == "/"){
             string rsp = response_200_html[0]+to_string(st_sites["index.html"].size())+response_200_html[1]+st_sites["index.html"];
@@ -106,7 +105,7 @@ void main1(net nt){
                     
                     if(!ol_data.empty() && !u_data.empty()){
                         string ai_req = "Коротко в 1 предложение объясни почему олимпиада " + ol_data[1] + " (" + ol_data[9] + ") подходит ученику " + u_data[2] + " класса. Описание: " + ol_data[10];
-                        string point = ask_ai(ai_req);
+                        string point = ask_ai1(ai_req);
                         
                         // Защита: Очищаем строки от двойных кавычек и переносов, ломающих JSON на фронте
                         string name_clean = ol_data[1];

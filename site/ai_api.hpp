@@ -71,10 +71,10 @@ string ask_ai1(const string& user_message) {
 
     // 6. Читаем ответ от сервера до закрытия соединения
     string raw_response = client.get(4096);
-    //cout<<raw_response<<endl;
     // 7. Проверяем HTTP статус-код (должен быть 200 OK)
     if (raw_response.find("HTTP/1.1 200 OK") == string::npos) {
         cerr << "[AI Error]: Non-200 response from server" << endl;
+        cout<<"ERROR LOG:"<<raw_response<<endl;
         // Если хотите увидеть ошибку (например 402), можно раскомментировать строку ниже:
         // cerr << raw_response << endl;
         return "";
