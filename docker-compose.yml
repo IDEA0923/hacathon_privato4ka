@@ -61,7 +61,6 @@ services:
     build: ./parser
     container_name: parser
     profiles: ["tools"]
-    restart: "no"
     environment:
       - POSTGRES_USER=${postgress_login}
       - POSTGRES_PASSWORD=${postgress_password}
