@@ -1,7 +1,4 @@
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
 
 # Маппим старые названия из .env на те, что используются в коде БД
 POSTGRES_USER = os.getenv("POSTGRES_USER")
