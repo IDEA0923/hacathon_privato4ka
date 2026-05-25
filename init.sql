@@ -8,14 +8,14 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS  events(
                                 id SERIAL PRIMARY KEY,
-                                name_1 VARCHAR(20),
+                                name_1 VARCHAR(100),
                                 date_start TIMESTAMP DEFAULT NOW() + INTERVAL '3 days',
                                 date_end TIMESTAMP DEFAULT NOW() + INTERVAL '4 days',
                                 class_start INT DEFAULT 0, 
                                 class_end INT DEFAULT 11, 
-                                lvl VARCHAR(20),
-                                frm VARCHAR(20),
-                                lnk VARCHAR(40),
+                                lvl VARCHAR(100),
+                                frm VARCHAR(100),
+                                lnk VARCHAR(100),
                                 subjects VARCHAR(20),
                                 description_1 VARCHAR(500),
                                 region INT
