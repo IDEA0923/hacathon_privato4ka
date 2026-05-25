@@ -13,7 +13,7 @@ from dbs_div import pg  # Импортируем твой объект базы 
 import env
 
 # Инициализация бота
-bot = Bot(token=env.BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+bot = Bot(token=env.TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher()
 router = Router()
 
