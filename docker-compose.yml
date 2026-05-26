@@ -24,7 +24,7 @@ services:
       retries: 10
     # command: ["postgres", "-c", "client_encoding=UTF8", "-c", "lc_ctype=ru_RU.UTF-8"]
   my_bot:
-    build: ./bot           # Путь до папки с Dockerfile бота
+    build: ./bot1           # Путь до папки с Dockerfile бота
     container_name: bot
     #restart: always
     volumes:
