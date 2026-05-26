@@ -20,3 +20,10 @@ CREATE TABLE IF NOT EXISTS  events(
                                 description_1 VARCHAR(500),
                                 region INT
                                 )
+CREATE TABLE IF NOT EXISTS registered_events (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    tg_id BIGINT NOT NULL,
+    event_id BIGINT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+);
