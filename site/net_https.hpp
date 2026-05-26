@@ -86,8 +86,8 @@ class net{
         while((n = SSL_read(ssl , buff ,sbuff )) > 0){
             ans.append(buff , n);
             //cout<<buff<<endl;
-            if(ans.find("\r\n\r\n")){
-                return buff;
+            if(ans.find("\r\n\r\n") != string::npos){
+                return ans;
             }
         }
         return ans;
@@ -103,11 +103,11 @@ class net{
                 if((n2 = ans.find("Content-Length: ")) != string::npos){
                     n2+=16;
                     if((n3 =ans.find("\r\n" , n2)) != string::npos){
-                        n2 = stoi(ans.substr(n2 , n2 -n3));
-                        n3 = ans.size()+4 - n1;
-                        while(n3 < n2 && (n = SSL_read(ssl , buff ,sbuff )) > 0){
+                        int content_length = stoi(ans.substr(n2 , n3 - n2));
+                        int body_received = ans.size() - (n1 + 4);
+                        while(body_received < content_length && (n = SSL_read(ssl , buff ,sbuff )) > 0){
                             ans.append(buff , n);
-                            n3+=n;
+                            body_received += n;
                         }
                     }
                 }

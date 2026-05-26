@@ -58,9 +58,9 @@ void main1(net nt){
     string path = get_arg1(&message, " ", " ");
     cout << "DEBUG: Path is -> [" << path << "]" << endl;
     
-    string methot = message.substr(0, message.find(" "));
-    cout<<"methot : "<<methot<<endl;
-    if(methot == "GET"){
+    string method = message.substr(0, message.find(" "));
+    cout<<"method : "<<method<<endl;
+    if(method == "GET"){
         if(path == "/"){
             string rsp = response_200_html[0]+to_string(st_sites["index.html"].size())+response_200_html[1]+st_sites["index.html"];
             nt.send(rsp);
@@ -68,14 +68,17 @@ void main1(net nt){
             nt.dnet();
             return;
         }else if("/api/" == path.substr(0, 5)){
+            // GET /api/profile handler — returns 405 Method Not Allowed
             if("profile" == path.substr(5, 7) ){
-                if(1)
+                string rsp = "HTTP/1.1 405 Method Not Allowed\r\nContent-Type: text/plain\r\nContent-Length: 20\r\n\r\nUse POST for profile";
+                nt.send(rsp);
+                cout<<"SENDED: 405 for GET /api/profile"<<endl;
                 nt.dnet();
                 return;
             }
             
         }
-    }else if(methot == "POST"){
+    }else if(method == "POST"){
         db db1 = db();
         
         if(path.size() >= 9 && "/profile/" == path.substr(0, 9)){

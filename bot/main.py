@@ -99,19 +99,30 @@ async def region_entered(message: Message, state: FSMContext) -> None:
     region = int(text)
     
     try:
-        # Сохранение данных в PostgreSQL через метод awrite
-        await pg.awrite(
-            "INSERT INTO users (tg_id, subjects, class, region) VALUES ($1, $2, $3, $4)",
-            tg_id, subject, user_class, region
-        )
+        # Проверяем, существует ли пользователь
+        user_exists = await pg.aread("SELECT id FROM users WHERE tg_id = $1", tg_id)
+        
+        if user_exists:
+            # Обновляем данные существующего пользователя
+            await pg.awrite(
+                "UPDATE users SET subjects = $1, class = $2, region = $3 WHERE tg_id = $4",
+                subject, user_class, region, tg_id
+            )
+            await message.answer("✅ Настройки успешно обновлены!")
+        else:
+            # Вставляем нового пользователя
+            await pg.awrite(
+                "INSERT INTO users (tg_id, subjects, class, region) VALUES ($1, $2, $3, $4)",
+                tg_id, subject, user_class, region
+            )
+            await message.answer("🎉 Регистрация успешно завершена! Твои данные сохранены.")
         
         # Завершаем FSM и очищаем сохраненные шаги
         await state.clear()
         
-        await message.answer("🎉 Регистрация успешно завершена! Твои данные сохранены.")
-        
     except Exception as e:
         logging.error(f"Ошибка при записи пользователя в БД: {e}")
+        await state.clear()
         await message.answer("Произошла ошибка при сохранении данных. Попробуй позже.")
 
 @router.message(Command("profile"))

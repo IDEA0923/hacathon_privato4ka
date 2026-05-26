@@ -6,13 +6,23 @@
 #include <ctime>
 using namespace std;
 
-string config_to_pg = "host=db port=5432 dbname="+string(getenv("POSTGRES_DB"))+" user="+string(getenv("POSTGRES_USER"))+" password="+string(getenv("POSTGRES_PASSWORD"));
+string get_config_to_pg() {
+    const char* db = getenv("POSTGRES_DB");
+    const char* user = getenv("POSTGRES_USER");
+    const char* pass = getenv("POSTGRES_PASSWORD");
+    if (!db || !user || !pass) {
+        cerr << "[FATAL] PostgreSQL environment variables (POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD) are not set!" << endl;
+        exit(1);
+    }
+    return "host=db port=5432 dbname=" + string(db) + " user=" + string(user) + " password=" + string(pass);
+}
 
 class db{
     public:
     PGconn *conn;
     bool ok = true;
-    db(string config = config_to_pg ){
+    db(string config = "" ){
+        if (config.empty()) config = get_config_to_pg();
         conn = PQconnectdb(config.c_str());
         if(PQstatus(conn) != CONNECTION_OK){
             ok = false;
@@ -110,7 +120,7 @@ vector<string> get_suitable_olimps1(string tg_id, db* db1) {
                "class_start <= $1 AND class_end >= $1 "
                "AND (region = $2 OR region = 0) "
                "AND date_start >= NOW() "
-               "AND (POSITION(subjects IN $3) > 0 OR $3 LIKE '%' || subjects || '%') "
+               "AND (POSITION($3 IN subjects) > 0 OR subjects LIKE '%' || $3 || '%') "
                "ORDER BY date_start ASC"; 
                
     vector<vector<string>> o_data = db1->req_with_ans(q, {cls, region, subjects});
@@ -130,7 +140,8 @@ vector<string> get_olimp_info(string id, db *db1){
     return fdb[0];
 }
 string generate_UUID(){
-    srand(time(0));
+    static bool seeded = false;
+    if (!seeded) { srand(time(0)); seeded = true; }
     string buff = "0123456789abcdef";
     string ans = "";
     for(int i = 0 ; i<8;i++){
@@ -154,4 +165,3 @@ string generate_UUID(){
     }
     return ans;
 }
-

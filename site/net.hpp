@@ -24,10 +24,10 @@ class net{
         char buff[sbuff] = {0};
         int n;
         string ans;
-        while((n == (::recv(socket ,buff , sbuff , 0 ))) > 0){
-            ans+=buff;
+        while((n = (::recv(socket ,buff , sbuff , 0 ))) > 0){
+            ans.append(buff, n);
         }
-        return "a";
+        return ans;
     }
     string recv_http_1(int sbuff = 1){
         char buff[sbuff] = {0};
@@ -72,8 +72,8 @@ class net{
         while((n = (::recv(socket ,buff , sbuff , 0 ))) > 0){
             ans.append(buff , n);
             cout<<buff<<endl;
-            if(ans.find("\r\n\r\n")){
-                return buff;
+            if(ans.find("\r\n\r\n") != string::npos){
+                return ans;
             }
         }
         return ans;

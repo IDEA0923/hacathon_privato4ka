@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS users (
                                 region INT
                                 );
 
+CREATE INDEX IF NOT EXISTS idx_users_tg_id ON users(tg_id);
+
 CREATE TABLE IF NOT EXISTS  events(
                                 id SERIAL PRIMARY KEY,
                                 name_1 VARCHAR(100),
@@ -19,4 +21,8 @@ CREATE TABLE IF NOT EXISTS  events(
                                 subjects VARCHAR(255),
                                 description_1 VARCHAR(500),
                                 region INT
-                                )
+                                );
+
+CREATE INDEX IF NOT EXISTS idx_events_region ON events(region);
+CREATE INDEX IF NOT EXISTS idx_events_class ON events(class_start, class_end);
+CREATE INDEX IF NOT EXISTS idx_events_date ON events(date_start);
