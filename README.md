@@ -23,10 +23,10 @@
 ```bash
 # 1. Настройте .env (BOT_TOKEN, POSTGRES_* и т.д.)
 # 2. Запуск основных сервисов:
-docker compose up -d
+docker compose up --build -d
 
 # 3. Запуск парсера (отдельный профиль):
-docker compose --profile tools up parser
+docker compose up --build --abort-on-container-exit parser
 ```
 
 ## Стек
