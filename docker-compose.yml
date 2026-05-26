@@ -26,7 +26,13 @@ services:
   my_bot:
     build: ./bot           # Путь до папки с Dockerfile бота
     container_name: bot
-    #restart: always
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'python main.py' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     volumes:
       - ./bot:/app:Z
     environment:

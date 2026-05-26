@@ -9,10 +9,11 @@
 #include <iostream>
 #include <thread>
 #include <map>
+#include <mutex>
 
-#include <cstdlib> //std::getenv("postgress_login");
+#include <cstdlib>
 
-#include <arpa/inet.h> //inet_ntoa
+#include <arpa/inet.h>
 #include "ai_api.hpp"
 #include <libpq-fe.h>
 
@@ -26,9 +27,29 @@ using namespace std;
 
 map<string , string > st_sites;
 
+mutex thread_mutex;
+int active_threads = 0;
+const int MAX_THREADS = 50;
 
+void decrement_thread_count() {
+    lock_guard<mutex> lock(thread_mutex);
+    active_threads--;
+}
 
 void main1(net nt){
+    {
+        lock_guard<mutex> lock(thread_mutex);
+        if (active_threads >= MAX_THREADS) {
+            cerr << "[Server] Too many connections, rejecting" << endl;
+            nt.dnet();
+            return;
+        }
+        active_threads++;
+    }
+    
+    struct ThreadGuard {
+        ~ThreadGuard() { decrement_thread_count(); }
+    } guard;
     
     if(nt.init()){nt.dnet();return;}
     string message = nt.recv2(1024);
@@ -57,7 +78,6 @@ void main1(net nt){
     }else if(methot == "POST"){
         db db1 = db();
         
-        // 1. Профиль
         if(path.size() >= 9 && "/profile/" == path.substr(0, 9)){
             string tg_id = path.substr(9);
             if(id_valid_data(tg_id, &db1) != -1){
@@ -72,7 +92,6 @@ void main1(net nt){
                 }
             }
         }
-        // 2. Олимпиады за месяц (id шники)
         else if(path.size() >= 12 && "/api/olimps/" == path.substr(0, 12)){
             string tg_id = path.substr(12);
             if(id_valid_data(tg_id, &db1) != -1){
@@ -92,7 +111,6 @@ void main1(net nt){
                 return;
             }
         }
-        // 3. Конкретная олимпиада + ИИ поинт
         else if(path.size() >= 11 && "/api/olimp:" == path.substr(0, 11)){
             size_t slash_pos = path.find('/', 11);
             if(slash_pos != string::npos){
@@ -104,10 +122,9 @@ void main1(net nt){
                     vector<string> u_data = get_user_info(tg_id, &db1);
                     
                     if(!ol_data.empty() && !u_data.empty()){
-                        string ai_req = "Коротко в 1 предложение объясни почему олимпиада " + ol_data[1] + " (" + ol_data[9] + ") подходит ученику " + u_data[2] + " класса. Описание: " + ol_data[10];
+                        string ai_req = "Korotko v 1 predlozhenie obyasni pochemu olimpiada " + ol_data[1] + " (" + ol_data[9] + ") podhodit ucheniku " + u_data[2] + " klassa. Opisanie: " + ol_data[10];
                         string point = ask_ai1(ai_req);
                         
-                        // Защита: Очищаем строки от двойных кавычек и переносов, ломающих JSON на фронте
                         string name_clean = ol_data[1];
                         string desc_clean = ol_data[10];
                         size_t pos = 0;
@@ -119,7 +136,6 @@ void main1(net nt){
                         pos = 0;
                         while((pos = desc_clean.find("\"", pos)) != string::npos) { desc_clean.replace(pos, 1, "\\\""); pos += 2; }
 
-                        // Формируем валидный JSON
                         string rsp_body = "{\n";
                         rsp_body += "\"id\": " + ol_data[0] + ",\n";
                         rsp_body += "\"name_1\": \"" + name_clean + "\",\n";
@@ -145,18 +161,6 @@ void main1(net nt){
             }
         }
     }
-    // if(methot == "POST"){
-    //     if("/profile/" == path.substr(0 , 9)){
-    //         db db1 = db();
-    //         string tg_id = path.substr(9);
-    //         if(id_valid_data(tg_id , &db1) != -1){
-    //             nt.send(nf404);
-    //             cout<<"SENDED: 404 Not Found"<<endl;
-    //             nt.dnet();
-    //         }
-
-    //     }
-    // }
     nt.send(nf404);
     cout<<"SENDED: 404 Not Found"<<endl;
     nt.dnet();
@@ -170,7 +174,6 @@ int main(int arg , char * args[]){
     configure_context(ctx , "server.crt" , "server.key");
     cout<<"[+]SSL INIT COMPLITE"<<endl;
     cout<<"[/]starting server on port:"<<args[1]<<" for "<<args[2]<<" sessions"<<endl;
-    ///init start
     int sock =  socket(AF_INET , SOCK_STREAM , 0);
     struct sockaddr_in serv , client;
     
@@ -193,9 +196,7 @@ int main(int arg , char * args[]){
     }
     int nw_sock;
     init_st_sites("catalog_static/" , "ctg.txt" , &st_sites);
-    //init_st_sites("catalog_static/" , "makets.txt" , &makets_sites);
     cout<<"[+] init complite "<<endl;
-    //init end
     socklen_t cli_len = sizeof(sockaddr);
     while((nw_sock = accept(sock  , (sockaddr * )& client  , &cli_len))){
         cout<<"new client"<<endl;

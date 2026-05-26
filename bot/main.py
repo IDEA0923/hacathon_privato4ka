@@ -4,7 +4,7 @@ import sys
 from aiogram import Bot, Dispatcher, html, Router, F
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
-from aiogram.filters import CommandStart
+from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
@@ -113,6 +113,58 @@ async def region_entered(message: Message, state: FSMContext) -> None:
     except Exception as e:
         logging.error(f"Ошибка при записи пользователя в БД: {e}")
         await message.answer("Произошла ошибка при сохранении данных. Попробуй позже.")
+
+@router.message(Command("profile"))
+async def profile_handler(message: Message) -> None:
+    """Показать настройки пользователя"""
+    tg_id = message.from_user.id
+    user_data = await pg.aread("SELECT subjects, class, region FROM users WHERE tg_id = $1", tg_id)
+    
+    if not user_data:
+        await message.answer("Ты ещё не зарегистрирован. Используй /start для регистрации.")
+        return
+    
+    subjects, user_class, region = user_data[0]
+    await message.answer(
+        f"📋 <b>Твой профиль:</b>\n"
+        f"📚 Предметы: {subjects}\n"
+        f"🎓 Класс: {user_class}\n"
+        f"🌍 Регион: {region}"
+    )
+
+@router.message(Command("settings"))
+async def settings_handler(message: Message, state: FSMContext) -> None:
+    """Изменить настройки пользователя"""
+    tg_id = message.from_user.id
+    user_exists = await pg.aread("SELECT id FROM users WHERE tg_id = $1", tg_id)
+    
+    if not user_exists:
+        await message.answer("Ты ещё не зарегистрирован. Используй /start для регистрации.")
+        return
+    
+    await state.clear()
+    await message.answer(
+        "⚙️ <b>Настройки:</b>\n"
+        "Чтобы изменить данные, пройди регистрацию заново командой /start\n"
+        "Текущие данные будут заменены новыми."
+    )
+    await state.set_state(Registration.choosing_subject)
+    await message.answer(
+        "Выбери свой основной предмет из списка:",
+        reply_markup=subjects_keyboard
+    )
+
+@router.message(Command("help"))
+async def help_handler(message: Message) -> None:
+    """Справка по командам бота"""
+    await message.answer(
+        f"ℹ️ <b>Справка по командам:</b>\n\n"
+        f"/start — Начать регистрацию или пройти её заново\n"
+        f"/profile — Показать твои текущие настройки\n"
+        f"/settings — Изменить настройки (предметы, класс, регион)\n"
+        f"/help — Показать эту справку\n\n"
+        f"Бот помогает подобрать подходящие олимпиады на основе твоих данных."
+    )
         
 async def main() -> None:
     # Важно: подключаемся к БД перед запуском бота

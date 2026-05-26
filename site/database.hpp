@@ -71,7 +71,19 @@ class db{
 //     return fdb[0];
 // }
 // Пофиксил синтаксис SQL (не было = $1)
+bool is_valid_tg_id(const string& tg_id) {
+    if (tg_id.empty()) return false;
+    for (char c : tg_id) {
+        if (!isdigit(c)) return false;
+    }
+    return true;
+}
+
 int id_valid_data(string tg_id, db* db1){
+    if (!is_valid_tg_id(tg_id)) {
+        cerr << "[Security] Invalid tg_id: " << tg_id << endl;
+        return -1;
+    }
     vector<vector<string>> fdb = db1->req_with_ans("SELECT id FROM users WHERE tg_id = $1", {tg_id});
     if(fdb.empty()){
         return -1;
